@@ -1,0 +1,18 @@
+RUNS=${1:-4096}
+langs=(
+  go go
+  kt kt
+  py py
+  swift swift
+  ts ts
+  c csharp java js lisp elm rb scala
+)
+num_langs=${#langs[@]}
+
+date
+curl "http://localhost:8973/reset"
+for run in $(seq $RUNS); do
+  lang=${langs[$(($RANDOM % ${num_langs}))]}
+  sender=$(($RANDOM % 512))
+  curl -XPOST "http://localhost:8973/chat?route=${sender}+to+Everyone&text=${lang}"
+done
