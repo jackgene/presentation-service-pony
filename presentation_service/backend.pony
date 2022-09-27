@@ -37,11 +37,6 @@ class val BackendHandlerFactory
 class BackendHandler is Handler
   let _no_content_response: Response =
     BuildableResponse(where status' = StatusNoContent)
-  let _bad_request_response: ByteSeqIter = Responses.builder()
-    .set_status(StatusBadRequest)
-    .add_header("Content-Length", "0")
-    .finish_headers()
-    .build()
   let _not_found_response: ByteSeqIter = Responses.builder()
     .set_status(StatusNotFound)
     .add_header("Content-Length", "0")
@@ -76,7 +71,17 @@ class BackendHandler is Handler
     _language_poll = language_poll
     _transcriptions = transcriptions
 
-  fun ref _route(
+  fun box _bad_request_response(
+    body: String = StatusBadRequest.string()
+  ): ByteSeqIter =>
+    Responses.builder()
+      .set_status(StatusBadRequest)
+      .add_header("Content-Length", body.size().string())
+      .finish_headers()
+      .add_chunk(body.array())
+      .build()
+
+  fun box _route(
     request: Request val, request_id: RequestID
   ): (ByteSeqIter val | None) =>
     match (request.method(), request.uri().path)
@@ -222,13 +227,17 @@ class BackendHandler is Handler
             _chat_messages.new_message(
               ChatMessage(sender, recipient, text)
             )
+          | None if sender != "Me" =>
+            return _bad_request_response("""malformed "route": """ + route)
           end
-        else error
+          _no_content_response
+        | (None, _) =>
+          _bad_request_response("""missing "route" parameter""")
+        else
+          _bad_request_response("""missing "text" parameter""")
         end
-
-        _no_content_response
       else
-        _bad_request_response // TODO build bad request with body
+        _bad_request_response()
       end
 
     | (GET, let path: String) if path == "/reset" =>
@@ -256,12 +265,12 @@ class BackendHandler is Handler
         match text_or_none
         | let text: String =>
           _transcriptions.new_transcription_text(text)
-        else error
+          _no_content_response
+        else
+          _bad_request_response("""missing "text" parameter""")
         end
-
-        _no_content_response
       else
-        _bad_request_response // TODO build bad request with body
+        _bad_request_response()
       end
 
     else
