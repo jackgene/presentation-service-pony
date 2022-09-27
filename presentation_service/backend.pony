@@ -13,6 +13,7 @@ class val BackendHandlerFactory
   let _chat_messages: ChatMessageBroadcaster
   let _rejected_messages: ChatMessageBroadcaster
   let _language_poll: SendersByTokenCounter
+  let _transcriptions: TranscriptionBroadcaster
 
   new val create(env: Env, deck_html: String) =>
     _deck_html = deck_html
@@ -25,10 +26,12 @@ class val BackendHandlerFactory
       rejected_messages = _rejected_messages,
       expected_senders = 200
     )
+    _transcriptions = TranscriptionBroadcaster(env)
 
   fun apply(session: Session): Handler ref^ =>
     BackendHandler(
-      session, _deck_html, _chat_messages, _rejected_messages, _language_poll
+      session, _deck_html,
+      _chat_messages, _rejected_messages, _language_poll, _transcriptions
     )
 
 class BackendHandler is Handler
@@ -50,13 +53,15 @@ class BackendHandler is Handler
   let _chat_messages: ChatMessageBroadcaster
   let _rejected_messages: ChatMessageBroadcaster
   let _language_poll: SendersByTokenCounter
+  let _transcriptions: TranscriptionBroadcaster
 
   new ref create(
     session: Session,
     deck_html: String,
     chat_messages: ChatMessageBroadcaster,
     rejected_messages: ChatMessageBroadcaster,
-    language_poll: SendersByTokenCounter
+    language_poll: SendersByTokenCounter,
+    transcriptions: TranscriptionBroadcaster
   ) =>
     _session = session
     _deck_response = Responses.builder()
@@ -69,6 +74,7 @@ class BackendHandler is Handler
     _chat_messages = chat_messages
     _rejected_messages = rejected_messages
     _language_poll = language_poll
+    _transcriptions = transcriptions
 
   fun ref _route(
     request: Request val, request_id: RequestID
@@ -131,7 +137,24 @@ class BackendHandler is Handler
     | (GET, let path: String) if path == "/event/transcription" =>
       let listener_factory: WebSocketHandlerFactory val =
         { (session: WebSocketSession): WebSocketHandler ref^ =>
+          let transcription_listener =
+            object val is TranscriptionListener
+              fun val transcription_received(transcript: Transcript) =>
+                let transcript_json: Map[String, JsonType] =
+                  HashMap[String, JsonType, HashEq[String]](1)
+                transcript_json("transcriptionText") = transcript.text
+                session.send_frame(
+                  Text(JsonObject.from_map(transcript_json).string())
+                )
+            end
+          _transcriptions.register(transcription_listener)
+
           object ref is WebSocketHandler
+            fun ref close_received(status: (CloseStatus | None)) =>
+              session.dispose()
+
+            fun ref closed() =>
+              _transcriptions.unregister(transcription_listener)
           end
         }
       _session.upgrade_to_websocket(request, request_id, listener_factory)
@@ -200,7 +223,8 @@ class BackendHandler is Handler
               ChatMessage(sender, recipient, text)
             )
           end
-        else error end
+        else error
+        end
 
         _no_content_response
       else
@@ -214,6 +238,32 @@ class BackendHandler is Handler
     // Transcription
     | (GET, let path: String) if path == "/transcriber" =>
       StaticContent.transcriber_response()
+
+    | (POST, let path: String) if path == "/transcription" =>
+      try
+        let query_esvs: Array[String] = request.uri().query.split("&")
+        var text_or_none: (String | None) = None
+
+        for query_esv in query_esvs.values() do
+          var query_pair: Array[String] = query_esv.split("=", 2)
+
+          match query_pair.shift()?
+          | let text_key: String if text_key == "text" =>
+            text_or_none = URLEncode.decode(query_pair.shift()?)?
+          end
+        end
+
+        match text_or_none
+        | let text: String =>
+          _transcriptions.new_transcription_text(text)
+        else error
+        end
+
+        _no_content_response
+      else
+        _bad_request_response // TODO build bad request with body
+      end
+
     else
       _not_found_response
     end
