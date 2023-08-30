@@ -13,6 +13,7 @@ class val BackendHandlerFactory
   let _chat_messages: ChatMessageBroadcaster
   let _rejected_messages: ChatMessageBroadcaster
   let _language_poll: SendersByTokenCounter
+  let _questions: MessageApprovalRouter
   let _transcriptions: TranscriptionBroadcaster
 
   new val create(env: Env, deck_html: String) =>
@@ -26,12 +27,19 @@ class val BackendHandlerFactory
       rejected_messages = _rejected_messages,
       expected_senders = 200
     )
+    _questions = MessageApprovalRouter(
+      env, "question"
+      where
+      chat_messages = _chat_messages,
+      rejected_messages = _rejected_messages,
+      expected_messages = 10
+    )
     _transcriptions = TranscriptionBroadcaster(env)
 
   fun apply(session: Session): Handler ref^ =>
     BackendHandler(
-      session, _deck_html,
-      _chat_messages, _rejected_messages, _language_poll, _transcriptions
+      session, _deck_html, _chat_messages, _rejected_messages,
+      _language_poll, _questions, _transcriptions
     )
 
 class BackendHandler is Handler
@@ -48,6 +56,7 @@ class BackendHandler is Handler
   let _chat_messages: ChatMessageBroadcaster
   let _rejected_messages: ChatMessageBroadcaster
   let _language_poll: SendersByTokenCounter
+  let _questions: MessageApprovalRouter
   let _transcriptions: TranscriptionBroadcaster
 
   new ref create(
@@ -56,6 +65,7 @@ class BackendHandler is Handler
     chat_messages: ChatMessageBroadcaster,
     rejected_messages: ChatMessageBroadcaster,
     language_poll: SendersByTokenCounter,
+    questions: MessageApprovalRouter,
     transcriptions: TranscriptionBroadcaster
   ) =>
     _session = session
@@ -69,6 +79,7 @@ class BackendHandler is Handler
     _chat_messages = chat_messages
     _rejected_messages = rejected_messages
     _language_poll = language_poll
+    _questions = questions
     _transcriptions = transcriptions
 
   fun box _bad_request_response(
@@ -113,17 +124,17 @@ class BackendHandler is Handler
                     JsonArray.from_array(count_and_tokens_pair_json)
                   )
                 end
+                let counts_json: Map[String, JsonType] =
+                  HashMap[String, JsonType, HashEq[String]](1)
+                counts_json("tokensAndCounts") = JsonArray.from_array(count_and_tokens_pairs_json)
                 session.send_frame(
-                  Text(
-                    JsonArray.from_array(count_and_tokens_pairs_json).string()
-                  )
+                  Text(JsonObject.from_map(counts_json).string())
                 )
             end
           _language_poll.register(count_listener)
 
           object ref is WebSocketHandler
-            fun ref close_received(status: (CloseStatus | None)) =>
-              session.dispose()
+            fun box current_session(): WebSocketSession => session
 
             fun ref closed() =>
               _language_poll.unregister(count_listener)
@@ -134,7 +145,30 @@ class BackendHandler is Handler
     | (GET, let path: String) if path == "/event/question" =>
       let listener_factory: WebSocketHandlerFactory val =
         { (session: WebSocketSession): WebSocketHandler ref^ =>
+          let messages_listener =
+            object val is ApprovedMessagesListener
+              fun val messages_received(messages: Messages) =>
+                let messages_json: Map[String, JsonType] =
+                  HashMap[String, JsonType, HashEq[String]](1)
+                let len: USize = messages.chat_text.size()
+                let chat_text_json: Array[JsonType] = Array[JsonType](len)
+                for text in messages.chat_text.values() do
+                  chat_text_json.push(text)
+                end
+                messages_json("chatText") =
+                  JsonArray.from_array(chat_text_json)
+                session.send_frame(
+                  Text(JsonObject.from_map(messages_json).string())
+                )
+            end
+          _questions.register(messages_listener)
+
           object ref is WebSocketHandler
+            fun box current_session(): WebSocketSession =>
+              session
+
+            fun ref closed() =>
+              _questions.unregister(messages_listener)
           end
         }
       _session.upgrade_to_websocket(request, request_id, listener_factory)
@@ -155,8 +189,7 @@ class BackendHandler is Handler
           _transcriptions.register(transcription_listener)
 
           object ref is WebSocketHandler
-            fun ref close_received(status: (CloseStatus | None)) =>
-              session.dispose()
+            fun box current_session(): WebSocketSession => session
 
             fun ref closed() =>
               _transcriptions.unregister(transcription_listener)
@@ -186,8 +219,7 @@ class BackendHandler is Handler
           _rejected_messages.register(message_listener)
 
           object ref is WebSocketHandler
-            fun ref close_received(status: (CloseStatus | None)) =>
-              session.dispose()
+            fun box current_session(): WebSocketSession => session
 
             fun ref closed() =>
               _rejected_messages.unregister(message_listener)

@@ -16,6 +16,18 @@ class val ChatMessage
 interface val ChatMessageListener
   fun val message_received(message: ChatMessage)
 
+interface val ChatMessageListenerActor
+  be message_received(message: ChatMessage)
+
+class val _ChatMessageListenerActorAdapter is ChatMessageListener
+  let _target: ChatMessageListenerActor tag
+
+  new val create(target: ChatMessageListenerActor tag) =>
+    _target = target
+
+  fun val message_received(message: ChatMessage) =>
+    _target.message_received(message)
+
 actor ChatMessageBroadcaster
   let _env: Env val
   let _name: String val

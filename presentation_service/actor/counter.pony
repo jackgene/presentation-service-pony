@@ -19,7 +19,7 @@ actor SendersByTokenCounter
   let _listeners: SetIs[TokensByCountListener val] ref =
     HashSet[TokensByCountListener val, HashIs[TokensByCountListener val]]
   let _message_receiver: ChatMessageListener =
-    _SendersByTokenCounterMessageReceiver(this)
+    _ChatMessageListenerActorAdapter(this)
 
   new create(
     env: Env, name: String, extract_token: TokenExtractor,
@@ -43,7 +43,7 @@ actor SendersByTokenCounter
       listener.counts_received(_token_frequencies.items_by_count)
     end
 
-  be _message_received(message: ChatMessage) =>
+  be message_received(message: ChatMessage) =>
     let sender: (String | None) =
       if message.sender != "Me" then message.sender end
     let old_token: (String | None) =
@@ -98,12 +98,3 @@ actor SendersByTokenCounter
     _env.out.print(
       "-1 " + _name + " listener (=" + _listeners.size().string() + ")"
     )
-
-class val _SendersByTokenCounterMessageReceiver is ChatMessageListener
-  let _counter: SendersByTokenCounter tag
-
-  new val create(counter: SendersByTokenCounter tag) =>
-    _counter = counter
-
-  fun val message_received(message: ChatMessage) =>
-    _counter._message_received(message)
