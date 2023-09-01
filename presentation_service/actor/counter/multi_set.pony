@@ -2,7 +2,7 @@ use "collections"
 use persistent = "collections/persistent"
 use "debug"
 
-class Frequencies
+class MultiSet
   let _counts_by_item: Map[String, I64]
   var items_by_count: persistent.Map[I64, persistent.Vec[String]]
 

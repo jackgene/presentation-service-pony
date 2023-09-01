@@ -1,4 +1,5 @@
 use "collections"
+use "counter"
 use persistent = "collections/persistent"
 
 interface val TokenExtractor
@@ -15,7 +16,7 @@ actor SendersByTokenCounter
   let _rejected_messages: ChatMessageBroadcaster tag
   let _expected_senders: USize val
   let _tokens_by_sender: Map[String, String] ref
-  let _token_frequencies: Frequencies
+  let _token_counts: MultiSet
   let _listeners: SetIs[TokensByCountListener val] ref =
     HashSet[TokensByCountListener val, HashIs[TokensByCountListener val]]
   let _message_receiver: ChatMessageListener =
@@ -36,11 +37,11 @@ actor SendersByTokenCounter
     _tokens_by_sender = HashMap[String, String, HashEq[String]](
       where prealloc = _expected_senders
     )
-    _token_frequencies = Frequencies(where prealloc = _expected_senders)
+    _token_counts = MultiSet(where prealloc = _expected_senders)
 
   fun _notify_listeners() =>
     for listener in _listeners.values() do
-      listener.counts_received(_token_frequencies.items_by_count)
+      listener.counts_received(_token_counts.items_by_count)
     end
 
   be message_received(message: ChatMessage) =>
@@ -65,7 +66,7 @@ actor SendersByTokenCounter
           _tokens_by_sender(sender') = new_token'
         end
 
-        _token_frequencies.update(
+        _token_counts.update(
           where increment = new_token', decrement = old_token
         )
         _notify_listeners()
@@ -77,11 +78,11 @@ actor SendersByTokenCounter
 
   be reset() =>
     _tokens_by_sender.clear()
-    _token_frequencies.clear()
+    _token_counts.clear()
     _notify_listeners()
 
   be register(listener: TokensByCountListener val) =>
-    listener.counts_received(_token_frequencies.items_by_count)
+    listener.counts_received(_token_counts.items_by_count)
     if _listeners.size() == 0 then
       _chat_messages.register(_message_receiver)
     end
