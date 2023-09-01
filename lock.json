@@ -9,8 +9,8 @@
       "revision": "1.2.1"
     },
     {
-      "locator": ".",
-      "revision": "main"
+      "locator": "github.com/ponylang/json.git",
+      "revision": "0.1.0"
     },
     {
       "locator": "github.com/jackgene/http_websocket_server.git",
@@ -19,6 +19,10 @@
     {
       "locator": "github.com/ponylang/valbytes.git",
       "revision": "0.6.2"
+    },
+    {
+      "locator": ".",
+      "revision": "main"
     }
   ]
 }

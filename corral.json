@@ -8,6 +8,10 @@
       "version": "1.1.6"
     },
     {
+      "locator": "github.com/ponylang/json.git",
+      "version": "0.1.0"
+    },
+    {
       "locator": "github.com/jackgene/http_websocket_server.git",
       "version": "feature/websocket-support"
     }
