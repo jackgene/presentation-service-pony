@@ -100,10 +100,10 @@ class BackendHandler is Handler
     | (GET, let path: String) if path == "/" => _deck_response
 
     | (GET, let path: String) if path == "/event/language-poll" =>
-      let listener_factory: WebSocketHandlerFactory val =
+      let handler_factory: WebSocketHandlerFactory val =
         { (session: WebSocketSession): WebSocketHandler ref^ =>
-          let count_listener =
-            object val is TokensByCountListener
+          let count_subscriber =
+            object val is CountsSubscriber
               fun val counts_received(
                 counts: persistent.Map[I64, persistent.Vec[String]]
               ) =>
@@ -131,16 +131,16 @@ class BackendHandler is Handler
                   Text(JsonObject.from_map(counts_json).string())
                 )
             end
-          _language_poll.register(count_listener)
+          _language_poll.subscribe(count_subscriber)
 
           object ref is WebSocketHandler
             fun box current_session(): WebSocketSession => session
 
             fun ref closed() =>
-              _language_poll.unregister(count_listener)
+              _language_poll.unsubscribe(count_subscriber)
           end
         }
-      _session.upgrade_to_websocket(request, request_id, listener_factory)
+      _session.upgrade_to_websocket(request, request_id, handler_factory)
 
     | (GET, let path: String) if path == "/event/question" =>
       let handler_factory: WebSocketHandlerFactory val =

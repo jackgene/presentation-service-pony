@@ -5,7 +5,7 @@ use persistent = "collections/persistent"
 interface val TokenExtractor
   fun val apply(text: String val): (String val | None)
 
-interface val TokensByCountListener
+interface val CountsSubscriber
   fun val counts_received(counts: persistent.Map[I64, persistent.Vec[String]])
 
 actor SendersByTokenCounter
@@ -17,8 +17,8 @@ actor SendersByTokenCounter
   let _expected_senders: USize val
   let _tokens_by_sender: Map[String, String] ref
   let _token_counts: MultiSet
-  let _listeners: SetIs[TokensByCountListener val] ref =
-    HashSet[TokensByCountListener val, HashIs[TokensByCountListener val]]
+  let _subscribers: SetIs[CountsSubscriber val] ref =
+    HashSet[CountsSubscriber val, HashIs[CountsSubscriber val]]
   let _message_receiver: ChatMessageListener =
     _ChatMessageListenerActorAdapter(this)
 
@@ -39,9 +39,9 @@ actor SendersByTokenCounter
     )
     _token_counts = MultiSet(where prealloc = _expected_senders)
 
-  fun _notify_listeners() =>
-    for listener in _listeners.values() do
-      listener.counts_received(_token_counts.items_by_count)
+  fun _notify_subscribers() =>
+    for subscriber in _subscribers.values() do
+      subscriber.counts_received(_token_counts.items_by_count)
     end
 
   be message_received(message: ChatMessage) =>
@@ -59,7 +59,7 @@ actor SendersByTokenCounter
 
       match old_token
       | let old_token': String if new_token' == old_token' =>
-        _notify_listeners()
+        _notify_subscribers()
       else
         match sender
         | let sender': String =>
@@ -69,7 +69,7 @@ actor SendersByTokenCounter
         _token_counts.update(
           where increment = new_token', decrement = old_token
         )
-        _notify_listeners()
+        _notify_subscribers()
       end
     else
       _env.out.print("No token extracted")
@@ -79,23 +79,23 @@ actor SendersByTokenCounter
   be reset() =>
     _tokens_by_sender.clear()
     _token_counts.clear()
-    _notify_listeners()
+    _notify_subscribers()
 
-  be register(listener: TokensByCountListener val) =>
-    listener.counts_received(_token_counts.items_by_count)
-    if _listeners.size() == 0 then
+  be subscribe(subscriber: CountsSubscriber val) =>
+    subscriber.counts_received(_token_counts.items_by_count)
+    if _subscribers.size() == 0 then
       _chat_messages.register(_message_receiver)
     end
-    _listeners.set(listener)
+    _subscribers.set(subscriber)
     _env.out.print(
-      "+1 " + _name + " listener (=" + _listeners.size().string() + ")"
+      "+1 " + _name + " subscriber (=" + _subscribers.size().string() + ")"
     )
 
-  be unregister(listener: TokensByCountListener val) =>
-    _listeners.unset(listener)
-    if _listeners.size() == 0 then
+  be unsubscribe(subscriber: CountsSubscriber val) =>
+    _subscribers.unset(subscriber)
+    if _subscribers.size() == 0 then
       _chat_messages.unregister(_message_receiver)
     end
     _env.out.print(
-      "-1 " + _name + " listener (=" + _listeners.size().string() + ")"
+      "-1 " + _name + " subscriber (=" + _subscribers.size().string() + ")"
     )
