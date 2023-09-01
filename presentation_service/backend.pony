@@ -13,7 +13,7 @@ class val BackendHandlerFactory
   let _chat_messages: ChatMessageBroadcaster
   let _rejected_messages: ChatMessageBroadcaster
   let _language_poll: SendersByTokenCounter
-  let _questions: MessageApprovalRouter
+  let _questions: ModeratedTextCollector
   let _transcriptions: TranscriptionBroadcaster
 
   new val create(env: Env, deck_html: String) =>
@@ -27,7 +27,7 @@ class val BackendHandlerFactory
       rejected_messages = _rejected_messages,
       expected_senders = 200
     )
-    _questions = MessageApprovalRouter(
+    _questions = ModeratedTextCollector(
       env, "question"
       where
       chat_messages = _chat_messages,
@@ -56,7 +56,7 @@ class BackendHandler is Handler
   let _chat_messages: ChatMessageBroadcaster
   let _rejected_messages: ChatMessageBroadcaster
   let _language_poll: SendersByTokenCounter
-  let _questions: MessageApprovalRouter
+  let _questions: ModeratedTextCollector
   let _transcriptions: TranscriptionBroadcaster
 
   new ref create(
@@ -65,7 +65,7 @@ class BackendHandler is Handler
     chat_messages: ChatMessageBroadcaster,
     rejected_messages: ChatMessageBroadcaster,
     language_poll: SendersByTokenCounter,
-    questions: MessageApprovalRouter,
+    questions: ModeratedTextCollector,
     transcriptions: TranscriptionBroadcaster
   ) =>
     _session = session
@@ -143,35 +143,35 @@ class BackendHandler is Handler
       _session.upgrade_to_websocket(request, request_id, listener_factory)
 
     | (GET, let path: String) if path == "/event/question" =>
-      let listener_factory: WebSocketHandlerFactory val =
+      let handler_factory: WebSocketHandlerFactory val =
         { (session: WebSocketSession): WebSocketHandler ref^ =>
-          let messages_listener =
-            object val is ApprovedMessagesListener
-              fun val messages_received(messages: Messages) =>
-                let messages_json: Map[String, JsonType] =
+          let question_subscriber =
+            object val is ModeratedTextSubscriber
+              fun val moderated_text_received(moderated_text: ModeratedText) =>
+                let moderated_text_json: Map[String, JsonType] =
                   HashMap[String, JsonType, HashEq[String]](1)
-                let len: USize = messages.chat_text.size()
+                let len: USize = moderated_text.chat_text.size()
                 let chat_text_json: Array[JsonType] = Array[JsonType](len)
-                for text in messages.chat_text.values() do
+                for text in moderated_text.chat_text.values() do
                   chat_text_json.push(text)
                 end
-                messages_json("chatText") =
+                moderated_text_json("chatText") =
                   JsonArray.from_array(chat_text_json)
                 session.send_frame(
-                  Text(JsonObject.from_map(messages_json).string())
+                  Text(JsonObject.from_map(moderated_text_json).string())
                 )
             end
-          _questions.register(messages_listener)
+          _questions.subscribe(question_subscriber)
 
           object ref is WebSocketHandler
             fun box current_session(): WebSocketSession =>
               session
 
             fun ref closed() =>
-              _questions.unregister(messages_listener)
+              _questions.unsubscribe(question_subscriber)
           end
         }
-      _session.upgrade_to_websocket(request, request_id, listener_factory)
+      _session.upgrade_to_websocket(request, request_id, handler_factory)
 
     | (GET, let path: String) if path == "/event/transcription" =>
       let listener_factory: WebSocketHandlerFactory val =
