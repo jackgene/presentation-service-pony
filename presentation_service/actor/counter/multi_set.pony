@@ -1,7 +1,7 @@
 use "collections"
 use persistent = "collections/persistent"
 
-class MultiSet[A: (Hashable val & Equatable[A] val)]
+class MultiSet[A: (Hashable val & Equatable[A])]
   let _counts_by_element: Map[A, I64]
   var elements_by_count: persistent.Map[I64, persistent.Vec[A]]
 
