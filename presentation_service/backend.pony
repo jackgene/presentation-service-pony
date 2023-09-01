@@ -174,11 +174,11 @@ class BackendHandler is Handler
       _session.upgrade_to_websocket(request, request_id, handler_factory)
 
     | (GET, let path: String) if path == "/event/transcription" =>
-      let listener_factory: WebSocketHandlerFactory val =
+      let handler_factory: WebSocketHandlerFactory val =
         { (session: WebSocketSession): WebSocketHandler ref^ =>
-          let transcription_listener =
-            object val is TranscriptionListener
-              fun val transcription_received(transcript: Transcript) =>
+          let transcription_subscriber =
+            object val is TranscriptionSubscriber
+              fun val transcript_received(transcript: Transcript) =>
                 let transcript_json: Map[String, JsonType] =
                   HashMap[String, JsonType, HashEq[String]](1)
                 transcript_json("transcriptionText") = transcript.text
@@ -186,16 +186,16 @@ class BackendHandler is Handler
                   Text(JsonObject.from_map(transcript_json).string())
                 )
             end
-          _transcriptions.register(transcription_listener)
+          _transcriptions.subscribe(transcription_subscriber)
 
           object ref is WebSocketHandler
             fun box current_session(): WebSocketSession => session
 
             fun ref closed() =>
-              _transcriptions.unregister(transcription_listener)
+              _transcriptions.unsubscribe(transcription_subscriber)
           end
         }
-      _session.upgrade_to_websocket(request, request_id, listener_factory)
+      _session.upgrade_to_websocket(request, request_id, handler_factory)
 
     // Moderation
     | (GET, let path: String) if path == "/moderator" =>
