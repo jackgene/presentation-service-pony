@@ -16,7 +16,7 @@ actor SendersByTokenCounter
   let _rejected_messages: ChatMessageBroadcaster tag
   let _expected_senders: USize val
   let _tokens_by_sender: Map[String, String] ref
-  let _token_counts: MultiSet
+  let _token_counts: MultiSet[String]
   let _subscribers: SetIs[CountsSubscriber val] ref =
     HashSet[CountsSubscriber val, HashIs[CountsSubscriber val]]
   let _message_subscriber: ChatMessageSubscriber =
@@ -37,7 +37,7 @@ actor SendersByTokenCounter
     _tokens_by_sender = HashMap[String, String, HashEq[String]](
       where prealloc = _expected_senders
     )
-    _token_counts = MultiSet(where prealloc = _expected_senders)
+    _token_counts = MultiSet[String](where prealloc = _expected_senders)
 
   fun _notify_subscribers() =>
     for subscriber in _subscribers.values() do
