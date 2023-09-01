@@ -19,8 +19,8 @@ actor SendersByTokenCounter
   let _token_counts: MultiSet
   let _subscribers: SetIs[CountsSubscriber val] ref =
     HashSet[CountsSubscriber val, HashIs[CountsSubscriber val]]
-  let _message_receiver: ChatMessageListener =
-    _ChatMessageListenerActorAdapter(this)
+  let _message_subscriber: ChatMessageSubscriber =
+    _ChatMessageSubscriberActorAdapter(this)
 
   new create(
     env: Env, name: String, extract_token: TokenExtractor,
@@ -84,7 +84,7 @@ actor SendersByTokenCounter
   be subscribe(subscriber: CountsSubscriber val) =>
     subscriber.counts_received(_token_counts.items_by_count)
     if _subscribers.size() == 0 then
-      _chat_messages.register(_message_receiver)
+      _chat_messages.subscribe(_message_subscriber)
     end
     _subscribers.set(subscriber)
     _env.out.print(
@@ -94,7 +94,7 @@ actor SendersByTokenCounter
   be unsubscribe(subscriber: CountsSubscriber val) =>
     _subscribers.unset(subscriber)
     if _subscribers.size() == 0 then
-      _chat_messages.unregister(_message_receiver)
+      _chat_messages.unsubscribe(_message_subscriber)
     end
     _env.out.print(
       "-1 " + _name + " subscriber (=" + _subscribers.size().string() + ")"

@@ -13,16 +13,16 @@ class val ChatMessage
   fun box string(): String iso^ =>
     sender + " to " + recipient + ": " + text
 
-interface val ChatMessageListener
+interface val ChatMessageSubscriber
   fun val message_received(message: ChatMessage)
 
-interface val ChatMessageListenerActor
+interface val ChatMessageSubscriberActor
   be message_received(message: ChatMessage)
 
-class val _ChatMessageListenerActorAdapter is ChatMessageListener
-  let _target: ChatMessageListenerActor tag
+class val _ChatMessageSubscriberActorAdapter is ChatMessageSubscriber
+  let _target: ChatMessageSubscriberActor tag
 
-  new val create(target: ChatMessageListenerActor tag) =>
+  new val create(target: ChatMessageSubscriberActor tag) =>
     _target = target
 
   fun val message_received(message: ChatMessage) =>
@@ -31,8 +31,8 @@ class val _ChatMessageListenerActorAdapter is ChatMessageListener
 actor ChatMessageBroadcaster
   let _env: Env val
   let _name: String val
-  let _listeners: SetIs[ChatMessageListener val] ref =
-    HashSet[ChatMessageListener val, HashIs[ChatMessageListener val]]
+  let _subscribers: SetIs[ChatMessageSubscriber val] ref =
+    HashSet[ChatMessageSubscriber val, HashIs[ChatMessageSubscriber val]]
 
   new create(env: Env, name: String) =>
     _env = env
@@ -40,18 +40,18 @@ actor ChatMessageBroadcaster
 
   be new_message(message: ChatMessage) =>
     _env.out.print("Received " + _name + " message - " + message.string())
-    for listener in _listeners.values() do
-      listener.message_received(message)
+    for subscriber in _subscribers.values() do
+      subscriber.message_received(message)
     end
 
-  be register(listener: ChatMessageListener val) =>
-    _listeners.set(listener)
+  be subscribe(subscriber: ChatMessageSubscriber val) =>
+    _subscribers.set(subscriber)
     _env.out.print(
-      "+1 " + _name + " message listener (=" + _listeners.size().string() + ")"
+      "+1 " + _name + " message subscriber (=" + _subscribers.size().string() + ")"
     )
 
-  be unregister(listener: ChatMessageListener val) =>
-    _listeners.unset(listener)
+  be unsubscribe(subscriber: ChatMessageSubscriber val) =>
+    _subscribers.unset(subscriber)
     _env.out.print(
-      "-1 " + _name + " message listener (=" + _listeners.size().string() + ")"
+      "-1 " + _name + " message subscriber (=" + _subscribers.size().string() + ")"
     )

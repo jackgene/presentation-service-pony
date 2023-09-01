@@ -17,8 +17,8 @@ actor ModeratedTextCollector
   let _chat_text_reversed: Array[String] ref
   let _subscribers: SetIs[ModeratedTextSubscriber val] ref =
     HashSet[ModeratedTextSubscriber val, HashIs[ModeratedTextSubscriber val]]
-  let _message_receiver: ChatMessageListener =
-    _ChatMessageListenerActorAdapter(this)
+  let _message_subscriber: ChatMessageSubscriber =
+    _ChatMessageSubscriberActorAdapter(this)
 
   new create(
     env: Env, name: String,
@@ -61,7 +61,7 @@ actor ModeratedTextCollector
   be subscribe(subscriber: ModeratedTextSubscriber val) =>
     subscriber.moderated_text_received(_messages())
     if _subscribers.size() == 0 then
-      _chat_messages.register(_message_receiver)
+      _chat_messages.subscribe(_message_subscriber)
     end
     _subscribers.set(subscriber)
     _env.out.print(
@@ -71,7 +71,7 @@ actor ModeratedTextCollector
   be unsubscribe(subscriber: ModeratedTextSubscriber val) =>
     _subscribers.unset(subscriber)
     if _subscribers.size() == 0 then
-      _chat_messages.unregister(_message_receiver)
+      _chat_messages.unsubscribe(_message_subscriber)
     end
     _env.out.print(
       "-1 " + _name + " subscriber (=" + _subscribers.size().string() + ")"
