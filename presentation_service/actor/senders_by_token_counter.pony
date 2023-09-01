@@ -41,7 +41,7 @@ actor SendersByTokenCounter
 
   fun _notify_subscribers() =>
     for subscriber in _subscribers.values() do
-      subscriber.counts_received(_token_counts.items_by_count)
+      subscriber.counts_received(_token_counts.elements_by_count)
     end
 
   be message_received(message: ChatMessage) =>
@@ -82,7 +82,7 @@ actor SendersByTokenCounter
     _notify_subscribers()
 
   be subscribe(subscriber: CountsSubscriber val) =>
-    subscriber.counts_received(_token_counts.items_by_count)
+    subscriber.counts_received(_token_counts.elements_by_count)
     if _subscribers.size() == 0 then
       _chat_messages.subscribe(_message_subscriber)
     end
