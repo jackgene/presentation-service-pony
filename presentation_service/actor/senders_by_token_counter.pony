@@ -2,8 +2,8 @@ use "collections"
 use "counter"
 use persistent = "collections/persistent"
 
-interface val TokenExtractor
-  fun val apply(text: String val): (String val | None)
+interface val Tokenizer
+  fun val apply(text: String val): Array[String val] iso^
 
 interface val CountsSubscriber
   fun val counts_received(counts: persistent.Map[U64, persistent.Vec[String]])
@@ -11,11 +11,12 @@ interface val CountsSubscriber
 actor SendersByTokenCounter
   let _env: Env val
   let _name: String val
-  let _extract_token: TokenExtractor val
+  let _extract_tokens: Tokenizer val
+  let _tokens_per_sender: USize
   let _chat_messages: ChatMessageBroadcaster tag
   let _rejected_messages: ChatMessageBroadcaster tag
   let _expected_senders: USize val
-  let _tokens_by_sender: Map[String, String] ref
+  let _tokens_by_sender: Map[String, FIFOBoundedSet[String]] ref
   let _token_counts: MultiSet[String]
   let _subscribers: SetIs[CountsSubscriber val] ref =
     HashSet[CountsSubscriber val, HashIs[CountsSubscriber val]]
@@ -23,18 +24,20 @@ actor SendersByTokenCounter
     _ChatMessageSubscriberActorAdapter(this)
 
   new create(
-    env: Env, name: String, extract_token: TokenExtractor,
+    env: Env, name: String, 
+    extract_tokens: Tokenizer, tokens_per_sender: USize,
     chat_messages: ChatMessageBroadcaster,
     rejected_messages: ChatMessageBroadcaster,
     expected_senders: USize
   ) =>
     _env = env
     _name = name
-    _extract_token = extract_token
+    _extract_tokens = extract_tokens
+    _tokens_per_sender = tokens_per_sender
     _chat_messages = chat_messages
     _rejected_messages = rejected_messages
     _expected_senders = expected_senders
-    _tokens_by_sender = HashMap[String, String, HashEq[String]](
+    _tokens_by_sender = HashMap[String, FIFOBoundedSet[String], HashEq[String]](
       where prealloc = _expected_senders
     )
     _token_counts = MultiSet[String](where prealloc = _expected_senders)
@@ -47,30 +50,36 @@ actor SendersByTokenCounter
   be message_received(message: ChatMessage) =>
     let sender: (String | None) =
       if message.sender != "Me" then message.sender end
-    let old_token: (String | None) =
+    let extracted_tokens: Array[String] = _extract_tokens(message.text)
+
+    if extracted_tokens.size() > 0 then
+      _env.out.print("Extracted token \"" + "\", \"".join(extracted_tokens.values()) + "\"")
+      extracted_tokens.reverse_in_place() // Prioritize earlier tokens
+      // TODO add to _chat_messages_and_tokens
       match sender
-      | let sender': String => try _tokens_by_sender(sender')? end
-      end
-    let new_token: (String | None) = _extract_token(message.text)
-
-    match new_token
-    | let new_token': String =>
-      _env.out.print("Extracted token \"" + new_token' + "\"")
-
-      match old_token
-      | let old_token': String if new_token' == old_token' =>
-        _notify_subscribers()
-      else
-        match sender
-        | let sender': String =>
-          _tokens_by_sender(sender') = new_token'
+      | let sender': String =>
+        let sender_tokens: FIFOBoundedSet[String] =
+          _tokens_by_sender.get_or_else(sender', FIFOBoundedSet[String](_tokens_per_sender))
+        let effects: Array[Effect] = sender_tokens.union(extracted_tokens.values())
+        effects.reverse_in_place()
+        for effect in effects.values() do
+          match effect
+          | let pushed: Pushed =>
+            _token_counts.update(pushed.value)
+          | let pushed_evicting: PushedEvicting =>
+            _token_counts.update(pushed_evicting.value, pushed_evicting.evicting)
+          end
         end
 
-        _token_counts.update(
-          where increment = new_token', decrement = old_token
-        )
-        _notify_subscribers()
+        _tokens_by_sender(sender') = sender_tokens
+
+      | None =>
+        for new_token in extracted_tokens.values() do
+          _token_counts.update(new_token)
+        end
       end
+
+      _notify_subscribers()
     else
       _env.out.print("No token extracted")
       _rejected_messages.new_message(message)

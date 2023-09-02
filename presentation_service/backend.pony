@@ -1,4 +1,5 @@
 use "actor"
+use "actor/tokenizing"
 use "collections"
 use persistent = "collections/persistent"
 use "crypto"
@@ -6,7 +7,6 @@ use "debug"
 use "encode/base64"
 use "http_server"
 use "json"
-use "model"
 
 class val BackendHandlerFactory
   let _deck_html: String
@@ -21,8 +21,9 @@ class val BackendHandlerFactory
     _chat_messages = ChatMessageBroadcaster(env, "chat")
     _rejected_messages = ChatMessageBroadcaster(env, "rejected")
     _language_poll = SendersByTokenCounter(
-      env, "language-poll", TokenFromFirstWord(Token.languages_by_name())
+      env, "language-poll", MappedKeywordsTokenizer(Token.languages_by_name())
       where
+      tokens_per_sender = 3,
       chat_messages = _chat_messages,
       rejected_messages = _rejected_messages,
       expected_senders = 200

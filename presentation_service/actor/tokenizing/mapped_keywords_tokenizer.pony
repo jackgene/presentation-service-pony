@@ -63,19 +63,22 @@ primitive Token
 
     mapping
 
-class TokenFromFirstWord
+class MappedKeywordsTokenizer
   let _token_by_word: Map[String, String] val
 
   new val create(token_by_word: Map[String, String] val) =>
     _token_by_word = token_by_word
 
-  fun val apply(text: String val): (String val| None) =>
+  fun val apply(text: String val): Array[String val] iso^ =>
     let text' = text.clone()
     text'.strip()
-    let words: Array[String val] = text'.split(where n = 2)
+    let words: Array[String] = text'.split()
+    let tokens: Array[String] iso = Array[String](words.size())
 
-    try
-      _token_by_word(words.shift()?.lower())?
-    else
-      None
+    for word in words.values() do
+      try
+        tokens.push(_token_by_word(word.lower())?)
+      end
     end
+
+    consume tokens
