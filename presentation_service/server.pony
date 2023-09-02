@@ -84,7 +84,7 @@ class LoggingServerNotify is ServerNotify
     """
     try
       (let host, let service) = server.local_address().name()?
-      _env.err.print("connected: " + host + ":" + service)
+      _env.out.print("Server started on http://" + host + ":" + service)
     else
       _env.err.print("Couldn't get local address.")
       _env.exitcode(1)
