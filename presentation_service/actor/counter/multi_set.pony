@@ -4,75 +4,75 @@ use persistent = "collections/persistent"
 class MultiSet[A: (Hashable val & Equatable[A])]
   let _max_safe_count: U64 = U64.max_value()
 
-  let _counts_by_element: Map[A, U64]
-  var elements_by_count: persistent.Map[U64, persistent.Vec[A]]
+  let _counts_by_value: Map[A, U64]
+  var values_by_count: persistent.Map[U64, persistent.Vec[A]]
 
   new ref create(prealloc: USize val = 6) =>
-    _counts_by_element = HashMap[A, U64, HashEq[A]](where prealloc = prealloc)
-    elements_by_count = persistent.HashMap[U64, persistent.Vec[A], HashEq[U64]]
+    _counts_by_value = HashMap[A, U64, HashEq[A]](where prealloc = prealloc)
+    values_by_count = persistent.HashMap[U64, persistent.Vec[A], HashEq[U64]]
 
-  fun ref _remove_elements_by_count(old_count: U64, element: A) =>
+  fun ref _remove_values_by_count(old_count: U64, value: A) =>
     try
-      var old_count_elements: persistent.Vec[A] = elements_by_count(old_count)?
-      elements_by_count =
+      var old_count_values: persistent.Vec[A] = values_by_count(old_count)?
+      values_by_count =
         try
-          old_count_elements = old_count_elements.delete(
-            old_count_elements.find(
-              element where predicate = {(l: A, r: A): Bool => l == r}
+          old_count_values = old_count_values.delete(
+            old_count_values.find(
+              value where predicate = {(l: A, r: A): Bool => l == r}
             )?
           )?
 
-          if old_count_elements.size() == 0 then
-            elements_by_count.remove(old_count)?
+          if old_count_values.size() == 0 then
+            values_by_count.remove(old_count)?
           else
-            elements_by_count(old_count) = old_count_elements
+            values_by_count(old_count) = old_count_values
           end
         else
-          elements_by_count
+          values_by_count
         end
     end
 
-  fun ref _increment(element: A) =>
-    let old_count: U64 = _counts_by_element.get_or_else(element, 0)
+  fun ref _increment(value: A) =>
+    let old_count: U64 = _counts_by_value.get_or_else(value, 0)
     if old_count < _max_safe_count then
       let new_count: U64 = old_count + 1
 
-      // Update _counts_by_element
-      _counts_by_element(element) = new_count
+      // Update _counts_by_value
+      _counts_by_value(value) = new_count
         
-      // Update elements_by_count
-      let new_count_elements: persistent.Vec[A] =
-        elements_by_count.get_or_else(new_count, persistent.Vec[A])
-      elements_by_count =
-        elements_by_count(new_count) = new_count_elements.push(element)
+      // Update values_by_count
+      let new_count_values: persistent.Vec[A] =
+        values_by_count.get_or_else(new_count, persistent.Vec[A])
+      values_by_count =
+        values_by_count(new_count) = new_count_values.push(value)
 
-      _remove_elements_by_count(old_count, element)
+      _remove_values_by_count(old_count, value)
     end
 
-  fun ref _decrement(element: A) =>
+  fun ref _decrement(value: A) =>
     try
-      let old_count: U64 = _counts_by_element(element)?
+      let old_count: U64 = _counts_by_value(value)?
       let new_count: U64 = old_count - 1
 
       if new_count == 0 then
-        _counts_by_element.remove(element)?
+        _counts_by_value.remove(value)?
       else
-        // Update _counts_by_element
-        _counts_by_element(element) = new_count
+        // Update _counts_by_value
+        _counts_by_value(value) = new_count
 
-        // Update elements_by_count
-        let new_count_elements: persistent.Vec[A] =
-          elements_by_count.get_or_else(new_count, persistent.Vec[A])
-        elements_by_count = elements_by_count(new_count) =
+        // Update values_by_count
+        let new_count_values: persistent.Vec[A] =
+          values_by_count.get_or_else(new_count, persistent.Vec[A])
+        values_by_count = values_by_count(new_count) =
           try
-            new_count_elements.insert(0, element)?
+            new_count_values.insert(0, value)?
           else
             // Can't insert when empty
-            new_count_elements.push(element)
+            new_count_values.push(value)
           end
       end
 
-      _remove_elements_by_count(old_count, element)
+      _remove_values_by_count(old_count, value)
     end
 
   fun ref update(increment: A, decrement: (A | None)) =>
@@ -82,5 +82,5 @@ class MultiSet[A: (Hashable val & Equatable[A])]
     end
 
   fun ref clear() =>
-    _counts_by_element.clear()
-    elements_by_count = persistent.HashMap[U64, persistent.Vec[A], HashEq[U64]]
+    _counts_by_value.clear()
+    values_by_count = persistent.HashMap[U64, persistent.Vec[A], HashEq[U64]]
