@@ -75,7 +75,7 @@ class MultiSet[A: (Hashable val & Equatable[A])]
       _remove_values_by_count(old_count, value)
     end
 
-  fun ref update(increment: A, decrement: (A | None)) =>
+  fun ref update(increment: A, decrement: (A | None) = None) =>
     _increment(increment)
     match decrement
     | let decrement': A => _decrement(decrement')
