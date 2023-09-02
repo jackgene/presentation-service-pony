@@ -105,7 +105,7 @@ class BackendHandler is Handler
           let count_subscriber =
             object val is CountsSubscriber
               fun val counts_received(
-                counts: persistent.Map[I64, persistent.Vec[String]]
+                counts: persistent.Map[U64, persistent.Vec[String]]
               ) =>
                 let count_and_tokens_pairs_json = Array[JsonType]
                 for (count', tokens') in counts.pairs() do
@@ -115,7 +115,10 @@ class BackendHandler is Handler
                   end
 
                   let count_and_tokens_pair_json = Array[JsonType]
-                  count_and_tokens_pair_json.push(count')
+                  let count_json = count'.i64()
+                  count_and_tokens_pair_json.push(
+                    if count_json < 0 then I64.max_value() else count_json end
+                  )
                   count_and_tokens_pair_json.push(
                     JsonArray.from_array(tokens_json)
                   )

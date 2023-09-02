@@ -6,7 +6,7 @@ interface val TokenExtractor
   fun val apply(text: String val): (String val | None)
 
 interface val CountsSubscriber
-  fun val counts_received(counts: persistent.Map[I64, persistent.Vec[String]])
+  fun val counts_received(counts: persistent.Map[U64, persistent.Vec[String]])
 
 actor SendersByTokenCounter
   let _env: Env val

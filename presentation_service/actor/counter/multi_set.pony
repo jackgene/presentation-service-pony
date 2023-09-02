@@ -2,17 +2,17 @@ use "collections"
 use persistent = "collections/persistent"
 
 class MultiSet[A: (Hashable val & Equatable[A])]
-  let _counts_by_element: Map[A, I64]
-  var elements_by_count: persistent.Map[I64, persistent.Vec[A]]
+  let _counts_by_element: Map[A, U64]
+  var elements_by_count: persistent.Map[U64, persistent.Vec[A]]
 
   new ref create(prealloc: USize val = 6) =>
-    _counts_by_element = HashMap[A, I64, HashEq[A]](where prealloc = prealloc)
-    elements_by_count = persistent.HashMap[I64, persistent.Vec[A], HashEq[I64]]
+    _counts_by_element = HashMap[A, U64, HashEq[A]](where prealloc = prealloc)
+    elements_by_count = persistent.HashMap[U64, persistent.Vec[A], HashEq[U64]]
 
-  fun ref _update(element: A, delta: I64) =>
+  fun ref _update(element: A, delta: I32) =>
     if delta != 0 then
-      let old_count: I64 = _counts_by_element.get_or_else(element, 0)
-      let new_count: I64 = old_count + delta
+      let old_count: U64 = _counts_by_element.get_or_else(element, 0)
+      let new_count: U64 = old_count + delta.u64()
 
       _counts_by_element(element) = new_count
 
@@ -62,4 +62,4 @@ class MultiSet[A: (Hashable val & Equatable[A])]
 
   fun ref clear() =>
     _counts_by_element.clear()
-    elements_by_count = persistent.HashMap[I64, persistent.Vec[A], HashEq[I64]]
+    elements_by_count = persistent.HashMap[U64, persistent.Vec[A], HashEq[U64]]
