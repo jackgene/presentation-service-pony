@@ -1,20 +1,8 @@
 {
   "locks": [
     {
-      "locator": "github.com/ponylang/crypto.git",
-      "revision": "1.1.6"
-    },
-    {
-      "locator": "github.com/ponylang/net_ssl.git",
-      "revision": "1.2.1"
-    },
-    {
       "locator": "github.com/ponylang/json.git",
       "revision": "0.1.0"
-    },
-    {
-      "locator": "github.com/jackgene/http_websocket_server.git",
-      "revision": "feature/websocket-support"
     },
     {
       "locator": "github.com/ponylang/valbytes.git",
@@ -23,6 +11,22 @@
     {
       "locator": ".",
       "revision": "main"
+    },
+    {
+      "locator": "github.com/ponylang/crypto.git",
+      "revision": "1.1.6"
+    },
+    {
+      "locator": "github.com/ponylang/net_ssl.git",
+      "revision": "1.2.1"
+    },
+    {
+      "locator": "github.com/ponylang/regex.git",
+      "revision": "1.1.5"
+    },
+    {
+      "locator": "github.com/jackgene/http_websocket_server.git",
+      "revision": "feature/websocket-support"
     }
   ]
 }

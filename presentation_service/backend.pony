@@ -16,13 +16,14 @@ class val BackendHandlerFactory
   let _questions: ModeratedTextCollector
   let _transcriptions: TranscriptionBroadcaster
 
-  new val create(env: Env, deck_html: String) =>
+  new val create(env: Env, deck_html: String)? =>
     _deck_html = deck_html
     _chat_messages = ChatMessageBroadcaster(env, "chat")
     _rejected_messages = ChatMessageBroadcaster(env, "rejected")
     _language_poll = SendersByTokenCounter(
-      env, "language-poll", MappedKeywordsTokenizer(Token.languages_by_name())
+      env, "language-poll"
       where
+      extract_tokens = MappedKeywordsTokenizer(env, Token.languages_by_name())?,
       tokens_per_sender = 3,
       chat_messages = _chat_messages,
       rejected_messages = _rejected_messages,

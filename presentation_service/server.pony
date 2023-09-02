@@ -14,9 +14,9 @@ actor Main
       // Start the top server control actor.
       let server = Server(
         TCPListenAuth(env.root),
-        LoggingServerNotify(env),             // notify for server lifecycle events
-        BackendHandlerFactory(env, deck_html) // factory for session-based application backend
-        where config = ServerConfig(          // configuration of Server
+        LoggingServerNotify(env),              // notify for server lifecycle events
+        BackendHandlerFactory(env, deck_html)? // factory for session-based application backend
+        where config = ServerConfig(           // configuration of Server
           where host' = host,
                 port' = port,
                 max_concurrent_connections' = 10000

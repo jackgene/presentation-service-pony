@@ -12,6 +12,10 @@
       "version": "0.1.0"
     },
     {
+      "locator": "github.com/ponylang/regex.git",
+      "version": "1.1.5"
+    },
+    {
       "locator": "github.com/jackgene/http_websocket_server.git",
       "version": "feature/websocket-support"
     }
