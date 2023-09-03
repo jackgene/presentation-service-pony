@@ -1,7 +1,7 @@
 use "collections"
 use "regex"
 
-primitive Token
+primitive MappedKeywordsTokenizing
   fun languages_by_name(): Map[String, String] val =>
     let mapping: Map[String, String] iso =
       recover iso
@@ -66,10 +66,13 @@ primitive Token
 
 class MappedKeywordsTokenizer
   let _env: Env val
-  let _word_separator_pattern: Regex = Regex("""[\s!"&,./?|]""")?
+  let _word_separator_pattern: (Regex val | None) =
+    try 
+      recover Regex("""[\s!"&,./?|]""")? end
+    else None end
   let _token_by_word: Map[String, String] val
 
-  new val create(env: Env, token_by_word: Map[String, String] val)? =>
+  new val create(env: Env, token_by_word: Map[String, String] val) =>
     _env = env
     _token_by_word = token_by_word
 
@@ -78,10 +81,15 @@ class MappedKeywordsTokenizer
     text'.strip()
     let words: Array[String] =
       try
-        let text'' = text'.clone()
-        _word_separator_pattern.split(consume text'')?
+        match _word_separator_pattern
+        | let word_separator_pattern: Regex val =>
+          word_separator_pattern.split(text'.clone())?
+        else error end
       else
-        _env.err.print("error spliting words with regex, falling back to simple split")
+        _env.err.print(
+          "[PROGRAMMING ERROR] error spliting words with regex, " +
+          "falling back to simple split"
+        )
         text'.split()
       end
     let tokens: Array[String] iso = Array[String](words.size())
