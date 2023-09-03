@@ -1,6 +1,7 @@
 use "collections"
 use "counter"
 use persistent = "collections/persistent"
+use "time"
 
 interface val Tokenizer
   fun val apply(text: String val): Array[String val] iso^
@@ -22,6 +23,10 @@ actor SendersByTokenCounter
     HashSet[CountsSubscriber val, HashIs[CountsSubscriber val]]
   let _message_subscriber: ChatMessageSubscriber =
     _ChatMessageSubscriberActorAdapter(this)
+  let _timers: Timers tag = Timers
+  let _quiet_period_nanos: U64 = 100_000_000
+  var _in_quiet_period: Bool = false
+  var _dirty: Bool = false
 
   new create(
     env: Env, name: String, 
@@ -42,10 +47,32 @@ actor SendersByTokenCounter
     )
     _token_counts = MultiSet[String](where prealloc = _expected_senders)
 
-  fun _notify_subscribers() =>
-    for subscriber in _subscribers.values() do
-      subscriber.counts_received(_token_counts.values_by_count)
+  fun ref _notify_subscribers() =>
+    if not _in_quiet_period then
+      for subscriber in _subscribers.values() do
+        subscriber.counts_received(_token_counts.values_by_count)
+      end
+      _in_quiet_period = true
+      _dirty = false
+
+      let self: SendersByTokenCounter tag = this
+      _timers(
+        Timer(
+          object is TimerNotify
+            fun ref apply(timer: Timer, count: U64): Bool =>
+              self._awake_from_quiet_period()
+              false
+          end,
+          _quiet_period_nanos
+        )
+      )
+    else
+      _dirty = true
     end
+
+  be _awake_from_quiet_period() =>
+    _in_quiet_period = false
+    if _dirty then _notify_subscribers() end
 
   be message_received(message: ChatMessage) =>
     let sender: (String | None) =
