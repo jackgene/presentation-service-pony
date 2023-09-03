@@ -1,10 +1,26 @@
 use "collections"
+use "json"
 
 class val ModeratedText
   let chat_text: Array[String] val
 
   new val create(chat_text': Array[String] val) =>
     chat_text = chat_text'
+
+  fun box json(): JsonObject iso^ =>
+    recover
+      let this_json: Map[String, JsonType] =
+        HashMap[String, JsonType, HashEq[String]](where prealloc = 1)
+
+      let chat_text_json: Array[JsonType] =
+        Array[JsonType](where len = chat_text.size())
+      for text in chat_text.values() do
+        chat_text_json.push(text)
+      end
+      this_json("chatText") = JsonArray.from_array(chat_text_json)
+
+      JsonObject.from_map(this_json)
+    end
 
 interface val ModeratedTextSubscriber
   fun val moderated_text_received(messages: ModeratedText)

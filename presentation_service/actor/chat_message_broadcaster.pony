@@ -1,4 +1,5 @@
 use "collections"
+use "json"
 
 class val ChatMessage
   let sender: String
@@ -12,6 +13,17 @@ class val ChatMessage
 
   fun box string(): String iso^ =>
     sender + " to " + recipient + ": " + text
+
+  fun box json(): JsonObject iso^ =>
+    recover
+      let this_json: Map[String, JsonType] =
+        HashMap[String, JsonType, HashEq[String]](where prealloc = 3)
+      this_json("s") = sender
+      this_json("r") = recipient
+      this_json("t") = text
+
+      JsonObject.from_map(this_json)
+    end
 
 interface val ChatMessageSubscriber
   fun val message_received(message: ChatMessage)

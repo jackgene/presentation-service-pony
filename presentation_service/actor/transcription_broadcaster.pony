@@ -1,10 +1,20 @@
 use "collections"
+use "json"
 
 class val Transcript
   let text: String
 
   new val create(text': String) =>
     text = text'
+
+  fun box json(): JsonObject iso^ =>
+    recover
+      let this_json: Map[String, JsonType] =
+        HashMap[String, JsonType, HashEq[String]](where prealloc = 1)
+      this_json("transcriptionText") = text
+
+      JsonObject.from_map(this_json)
+    end
 
 interface val TranscriptionSubscriber
   fun val transcript_received(transcript: Transcript)

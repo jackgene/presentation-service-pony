@@ -5,7 +5,6 @@ use persistent = "collections/persistent"
 use "crypto"
 use "encode/base64"
 use "http_server"
-use "json"
 
 class val BackendHandlerFactory
   let _deck_html: String
@@ -106,31 +105,8 @@ class BackendHandler is Handler
           let count_subscriber =
             object val is CountsSubscriber
               fun val counts_received(counts: Counts) =>
-                let count_and_tokens_pairs_json = Array[JsonType]
-                for (count', tokens') in counts.tokens_by_count.pairs() do
-                  let tokens_json = Array[JsonType]
-                  for token in tokens'.values() do
-                    tokens_json.push(token)
-                  end
-
-                  let count_and_tokens_pair_json = Array[JsonType]
-                  let count_json = count'.i64()
-                  count_and_tokens_pair_json.push(
-                    if count_json < 0 then I64.max_value() else count_json end
-                  )
-                  count_and_tokens_pair_json.push(
-                    JsonArray.from_array(tokens_json)
-                  )
-
-                  count_and_tokens_pairs_json.push(
-                    JsonArray.from_array(count_and_tokens_pair_json)
-                  )
-                end
-                let counts_json: Map[String, JsonType] =
-                  HashMap[String, JsonType, HashEq[String]](1)
-                counts_json("tokensAndCounts") = JsonArray.from_array(count_and_tokens_pairs_json)
                 session.send_frame(
-                  Text(JsonObject.from_map(counts_json).string())
+                  Text(counts.json().string())
                 )
             end
           _language_poll.subscribe(count_subscriber)
@@ -150,17 +126,8 @@ class BackendHandler is Handler
           let question_subscriber =
             object val is ModeratedTextSubscriber
               fun val moderated_text_received(moderated_text: ModeratedText) =>
-                let moderated_text_json: Map[String, JsonType] =
-                  HashMap[String, JsonType, HashEq[String]](1)
-                let len: USize = moderated_text.chat_text.size()
-                let chat_text_json: Array[JsonType] = Array[JsonType](len)
-                for text in moderated_text.chat_text.values() do
-                  chat_text_json.push(text)
-                end
-                moderated_text_json("chatText") =
-                  JsonArray.from_array(chat_text_json)
                 session.send_frame(
-                  Text(JsonObject.from_map(moderated_text_json).string())
+                  Text(moderated_text.json().string())
                 )
             end
           _questions.subscribe(question_subscriber)
@@ -181,11 +148,8 @@ class BackendHandler is Handler
           let transcription_subscriber =
             object val is TranscriptionSubscriber
               fun val transcript_received(transcript: Transcript) =>
-                let transcript_json: Map[String, JsonType] =
-                  HashMap[String, JsonType, HashEq[String]](1)
-                transcript_json("transcriptionText") = transcript.text
                 session.send_frame(
-                  Text(JsonObject.from_map(transcript_json).string())
+                  Text(transcript.json().string())
                 )
             end
           _transcriptions.subscribe(transcription_subscriber)
@@ -209,13 +173,8 @@ class BackendHandler is Handler
           let message_subscriber =
             object val is ChatMessageSubscriber
               fun val message_received(message: ChatMessage) =>
-                let message_json: Map[String, JsonType] =
-                  HashMap[String, JsonType, HashEq[String]](3)
-                message_json("s") = message.sender
-                message_json("r") = message.recipient
-                message_json("t") = message.text
                 session.send_frame(
-                  Text(JsonObject.from_map(message_json).string())
+                  Text(message.json().string())
                 )
             end
           _rejected_messages.subscribe(message_subscriber)

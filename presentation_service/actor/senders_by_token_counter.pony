@@ -1,21 +1,112 @@
 use "collections"
 use "counter"
 use persistent = "collections/persistent"
+use "json"
 use "time"
 
+class val ChatMessageAndTokens
+  let chat_message: ChatMessage
+  let tokens: Array[String] val
+
+  new val create(
+    chat_message': ChatMessage,
+    tokens': Array[String] val
+  ) =>
+    chat_message = chat_message'
+    tokens = tokens'
+
+  fun box json(): JsonObject iso^ =>
+    recover
+      let this_json: Map[String, JsonType] =
+        HashMap[String, JsonType, HashEq[String]](2)
+
+      // Property: chatMessage
+      this_json("chatMessage") = chat_message.json()
+
+      // Property: tokens
+      let tokens_json: Array[JsonType] =
+        Array[JsonType](where len = tokens.size())
+      for token in tokens.values() do
+        tokens_json.push(token)
+      end
+      this_json("tokens") = JsonArray.from_array(tokens_json)
+
+      JsonObject.from_map(this_json)
+    end
+
 class val Counts
-  let chat_messages_and_tokens: persistent.Vec[(ChatMessage, Array[String] val)]
+  let chat_messages_and_tokens: persistent.Vec[ChatMessageAndTokens]
   let tokens_by_sender: Map[String, persistent.Vec[String]] val
   let tokens_by_count: persistent.Map[U64, persistent.Vec[String]]
 
   new val create(
-    chat_messages_and_tokens': persistent.Vec[(ChatMessage, Array[String] val)],
+    chat_messages_and_tokens': persistent.Vec[ChatMessageAndTokens],
     tokens_by_sender': Map[String, persistent.Vec[String]] val,
     tokens_by_count': persistent.Map[U64, persistent.Vec[String]]
   ) =>
     chat_messages_and_tokens = chat_messages_and_tokens'
     tokens_by_sender = tokens_by_sender'
     tokens_by_count = tokens_by_count'
+
+  fun box json(): JsonObject iso^ =>
+    recover
+      let this_json: Map[String, JsonType] =
+        HashMap[String, JsonType, HashEq[String]](3)
+
+      // Property: chatMessagesAndTokens
+      let chat_messages_and_tokens_json: Array[JsonType] =
+        Array[JsonType](where len = chat_messages_and_tokens.size())
+      for chat_message_and_tokens in chat_messages_and_tokens.values() do
+        chat_messages_and_tokens_json.push(chat_message_and_tokens.json())
+      end
+      this_json("chatMessagesAndTokens") =
+        JsonArray.from_array(chat_messages_and_tokens_json)
+
+      // Property: tokensBySender
+      let tokens_by_sender_json: Map[String, JsonType] =
+        HashMap[String, JsonType, HashEq[String]](
+          where prealloc = tokens_by_sender.size()
+        )
+      for (sender', tokens') in tokens_by_sender.pairs() do
+        let tokens_json: Array[JsonType] =
+          Array[JsonType](where len = tokens'.size())
+        for token' in tokens'.values() do
+          tokens_json.push(token')
+        end
+        tokens_by_sender_json(sender') = JsonArray.from_array(tokens_json)
+      end
+      this_json("tokensBySender") =
+        JsonObject.from_map(tokens_by_sender_json)
+
+      // Property: tokensAndCounts
+      let count_and_tokens_pairs_json: Array[JsonType] =
+        Array[JsonType](where len = tokens_by_count.size())
+      for (count', tokens') in tokens_by_count.pairs() do
+        let tokens_json = Array[JsonType]
+        for token' in tokens'.values() do
+          tokens_json.push(token')
+        end
+
+        let count_and_tokens_pair_json = Array[JsonType]
+        let count_json = count'.i64()
+        // Property: tokensAndCounts[*]._1
+        count_and_tokens_pair_json.push(
+          if count_json < 0 then I64.max_value() else count_json end
+        )
+        // Property: tokensAndCounts[*]._2
+        count_and_tokens_pair_json.push(
+          JsonArray.from_array(tokens_json)
+        )
+
+        count_and_tokens_pairs_json.push(
+          JsonArray.from_array(count_and_tokens_pair_json)
+        )
+      end
+      this_json("tokensAndCounts") =
+        JsonArray.from_array(count_and_tokens_pairs_json)
+
+      JsonObject.from_map(this_json)
+    end
 
 interface val CountsSubscriber
   fun val counts_received(counts: Counts)
@@ -31,7 +122,7 @@ actor SendersByTokenCounter
   let _chat_messages: ChatMessageBroadcaster tag
   let _rejected_messages: ChatMessageBroadcaster tag
   let _expected_senders: USize val
-  var _chat_messages_and_tokens: persistent.Vec[(ChatMessage, Array[String] val)]
+  var _chat_messages_and_tokens: persistent.Vec[ChatMessageAndTokens]
   let _tokens_by_sender: Map[String, FIFOBoundedSet[String]] ref
   let _token_counts: MultiSet[String]
   let _subscribers: SetIs[CountsSubscriber val] ref =
@@ -57,10 +148,11 @@ actor SendersByTokenCounter
     _chat_messages = chat_messages
     _rejected_messages = rejected_messages
     _expected_senders = expected_senders
-    _chat_messages_and_tokens = persistent.Vec[(ChatMessage, Array[String] val)]
-    _tokens_by_sender = HashMap[String, FIFOBoundedSet[String], HashEq[String]](
-      where prealloc = _expected_senders
-    )
+    _chat_messages_and_tokens = persistent.Vec[ChatMessageAndTokens]
+    _tokens_by_sender =
+      HashMap[String, FIFOBoundedSet[String], HashEq[String]](
+        where prealloc = _expected_senders
+      )
     _token_counts = MultiSet[String](where prealloc = _expected_senders)
 
   fun box _current_counts(): Counts =>
@@ -109,22 +201,31 @@ actor SendersByTokenCounter
     let extracted_tokens: Array[String] val = _extract_tokens(message.text)
 
     if extracted_tokens.size() > 0 then
-      _env.out.print("Extracted token \"" + "\", \"".join(extracted_tokens.values()) + "\"")
+      _env.out.print(
+        "Extracted token \"" + "\", \"".join(extracted_tokens.values()) + "\""
+      )
       let prioritized_tokens: Array[String] val =
         recover extracted_tokens.reverse() end // Prioritize earlier tokens
-      _chat_messages_and_tokens.push((message, extracted_tokens))
+      _chat_messages_and_tokens = _chat_messages_and_tokens.push(
+        ChatMessageAndTokens(message, extracted_tokens)
+      )
       match sender
       | let sender': String =>
         let sender_tokens: FIFOBoundedSet[String] =
-          _tokens_by_sender.get_or_else(sender', FIFOBoundedSet[String](_tokens_per_sender))
-        let effects: Array[Effect[String]] = sender_tokens.union(prioritized_tokens.values())
+          _tokens_by_sender.get_or_else(
+            sender', FIFOBoundedSet[String](_tokens_per_sender)
+          )
+        let effects: Array[Effect[String]] =
+          sender_tokens.union(prioritized_tokens.values())
         effects.reverse_in_place()
         for effect in effects.values() do
           match effect
           | let pushed: Pushed[String] =>
             _token_counts.update(pushed.value)
           | let pushed_evicting: PushedEvicting[String] =>
-            _token_counts.update(pushed_evicting.value, pushed_evicting.evicting)
+            _token_counts.update(
+              pushed_evicting.value, pushed_evicting.evicting
+            )
           end
         end
 
