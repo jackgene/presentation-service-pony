@@ -64,7 +64,7 @@ actor ModeratedTextCollector
 
   be message_received(message: ChatMessage) =>
     match message.sender
-    | "Me" =>
+    | "" =>
       _chat_text_reversed.push(message.text)
       _notify_subscribers()
     else
