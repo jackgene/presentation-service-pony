@@ -60,13 +60,13 @@ actor SendersByTokenCounter
       | let sender': String =>
         let sender_tokens: FIFOBoundedSet[String] =
           _tokens_by_sender.get_or_else(sender', FIFOBoundedSet[String](_tokens_per_sender))
-        let effects: Array[Effect] = sender_tokens.union(extracted_tokens.values())
+        let effects: Array[Effect[String]] = sender_tokens.union(extracted_tokens.values())
         effects.reverse_in_place()
         for effect in effects.values() do
           match effect
-          | let pushed: Pushed =>
+          | let pushed: Pushed[String] =>
             _token_counts.update(pushed.value)
-          | let pushed_evicting: PushedEvicting =>
+          | let pushed_evicting: PushedEvicting[String] =>
             _token_counts.update(pushed_evicting.value, pushed_evicting.evicting)
           end
         end
