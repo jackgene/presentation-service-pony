@@ -3,66 +3,64 @@ use "regex"
 
 primitive MappedKeywordsTokenizing
   fun languages_by_name(): Map[String, String] val =>
-    let mapping: Map[String, String] iso =
-      recover iso
-        HashMap[String, String, HashEq[String]](
-          where prealloc = 34
-        )
-      end
+    recover
+      let mapping: Map[String, String] =
+        HashMap[String, String, HashEq[String]](where prealloc = 34)
 
-    // Others
-    // C/C++
-    mapping("c") = "C"
-    mapping("c++") = "C"
-    // C#
-    mapping("c#") = "C#"
-    mapping("csharp") = "C#"
-    // Go
-    mapping("go") = "Go"
-    mapping("golang") = "Go"
-    // Kotlin
-    mapping("kotlin") = "Kotlin"
-    mapping("kt") = "Kotlin"
-    // Java
-    mapping("java") = "Java"
-    // Javascript
-    mapping("js") = "JavaScript"
-    mapping("ecmascript") = "JavaScript"
-    mapping("javascript") = "JavaScript"
-    // Lisp
-    mapping("lisp") = "Lisp"
-    mapping("clojure") = "Lisp"
-    mapping("racket") = "Lisp"
-    mapping("scheme") = "Lisp"
-    // ML
-    mapping("ml") = "ML"
-    mapping("haskell") = "ML"
-    mapping("caml") = "ML"
-    mapping("elm") = "ML"
-    mapping("f#") = "ML"
-    mapping("ocaml") = "ML"
-    mapping("purescript") = "ML"
-    // Perl
-    mapping("perl") = "Perl"
-    // PHP
-    mapping("php") = "PHP"
-    // Python
-    mapping("py") = "Python"
-    mapping("python") = "Python"
-    // Ruby
-    mapping("ruby") = "Ruby"
-    mapping("rb") = "Ruby"
-    // Rust
-    mapping("rust") = "Rust"
-    // Scala
-    mapping("scala") = "Scala"
-    // Swift
-    mapping("swift") = "Swift"
-    // TypeScript
-    mapping("ts") = "TypeScript"
-    mapping("typescript") = "TypeScript"
+      // Others
+      // C/C++
+      mapping("c") = "C"
+      mapping("c++") = "C"
+      // C#
+      mapping("c#") = "C#"
+      mapping("csharp") = "C#"
+      // Go
+      mapping("go") = "Go"
+      mapping("golang") = "Go"
+      // Kotlin
+      mapping("kotlin") = "Kotlin"
+      mapping("kt") = "Kotlin"
+      // Java
+      mapping("java") = "Java"
+      // Javascript
+      mapping("js") = "JavaScript"
+      mapping("ecmascript") = "JavaScript"
+      mapping("javascript") = "JavaScript"
+      // Lisp
+      mapping("lisp") = "Lisp"
+      mapping("clojure") = "Lisp"
+      mapping("racket") = "Lisp"
+      mapping("scheme") = "Lisp"
+      // ML
+      mapping("ml") = "ML"
+      mapping("haskell") = "ML"
+      mapping("caml") = "ML"
+      mapping("elm") = "ML"
+      mapping("f#") = "ML"
+      mapping("ocaml") = "ML"
+      mapping("purescript") = "ML"
+      // Perl
+      mapping("perl") = "Perl"
+      // PHP
+      mapping("php") = "PHP"
+      // Python
+      mapping("py") = "Python"
+      mapping("python") = "Python"
+      // Ruby
+      mapping("ruby") = "Ruby"
+      mapping("rb") = "Ruby"
+      // Rust
+      mapping("rust") = "Rust"
+      // Scala
+      mapping("scala") = "Scala"
+      // Swift
+      mapping("swift") = "Swift"
+      // TypeScript
+      mapping("ts") = "TypeScript"
+      mapping("typescript") = "TypeScript"
 
-    mapping
+      mapping
+    end
 
 class MappedKeywordsTokenizer
   let _env: Env val
