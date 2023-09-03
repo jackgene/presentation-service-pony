@@ -75,27 +75,29 @@ class MappedKeywordsTokenizer
     _token_by_word = token_by_word
 
   fun val apply(text: String val): Array[String val] iso^ =>
-    let text' = text.clone()
-    text'.strip()
-    let words: Array[String] =
-      try
-        match _word_separator_pattern
-        | let word_separator_pattern: Regex val =>
-          word_separator_pattern.split(text'.clone())?
-        else error end
-      else
-        _env.err.print(
-          "[PROGRAMMING ERROR] error spliting words with regex, " +
-          "falling back to simple split"
-        )
-        text'.split()
-      end
-    let tokens: Array[String] iso = Array[String](words.size())
+    recover
+      let text' = text.clone()
+      text'.strip()
+      let words: Array[String] =
+        try
+          match _word_separator_pattern
+          | let word_separator_pattern: Regex val =>
+            word_separator_pattern.split(text'.clone())?
+          else error end
+        else
+          _env.err.print(
+            "[PROGRAMMING ERROR] error spliting words with regex, " +
+            "falling back to simple split"
+          )
+          text'.split()
+        end
 
-    for word in words.values() do
-      try
-        tokens.push(_token_by_word(word.lower())?)
+      let tokens: Array[String] = Array[String](where len = words.size())
+      for word in words.values() do
+        try
+          tokens.push(_token_by_word(word.lower())?)
+        end
       end
+
+      tokens
     end
-
-    consume tokens
