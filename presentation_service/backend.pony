@@ -3,7 +3,6 @@ use "actor/tokenizing"
 use "collections"
 use persistent = "collections/persistent"
 use "crypto"
-use "debug"
 use "encode/base64"
 use "http_server"
 use "json"
@@ -320,9 +319,3 @@ class BackendHandler is Handler
       _session.send_raw(response, request_id)
       _session.send_finished(request_id)
     end
-
-  fun ref throttled() =>
-    Debug("throttled")
-
-  fun ref unthrottled() =>
-    Debug("unthrottled")
