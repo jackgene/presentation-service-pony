@@ -105,11 +105,9 @@ class BackendHandler is Handler
         { (session: WebSocketSession): WebSocketHandler ref^ =>
           let count_subscriber =
             object val is CountsSubscriber
-              fun val counts_received(
-                counts: persistent.Map[U64, persistent.Vec[String]]
-              ) =>
+              fun val counts_received(counts: Counts) =>
                 let count_and_tokens_pairs_json = Array[JsonType]
-                for (count', tokens') in counts.pairs() do
+                for (count', tokens') in counts.tokens_by_count.pairs() do
                   let tokens_json = Array[JsonType]
                   for token in tokens'.values() do
                     tokens_json.push(token)

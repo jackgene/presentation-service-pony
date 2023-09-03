@@ -3,11 +3,25 @@ use "counter"
 use persistent = "collections/persistent"
 use "time"
 
-interface val Tokenizer
-  fun val apply(text: String val): Array[String val] iso^
+class val Counts
+  let chat_messages_and_tokens: persistent.Vec[(ChatMessage, Array[String] val)]
+  let tokens_by_sender: Map[String, persistent.Vec[String]] val
+  let tokens_by_count: persistent.Map[U64, persistent.Vec[String]]
+
+  new val create(
+    chat_messages_and_tokens': persistent.Vec[(ChatMessage, Array[String] val)],
+    tokens_by_sender': Map[String, persistent.Vec[String]] val,
+    tokens_by_count': persistent.Map[U64, persistent.Vec[String]]
+  ) =>
+    chat_messages_and_tokens = chat_messages_and_tokens'
+    tokens_by_sender = tokens_by_sender'
+    tokens_by_count = tokens_by_count'
 
 interface val CountsSubscriber
-  fun val counts_received(counts: persistent.Map[U64, persistent.Vec[String]])
+  fun val counts_received(counts: Counts)
+
+interface val Tokenizer
+  fun val apply(text: String val): Array[String val] iso^
 
 actor SendersByTokenCounter
   let _env: Env val
@@ -17,6 +31,7 @@ actor SendersByTokenCounter
   let _chat_messages: ChatMessageBroadcaster tag
   let _rejected_messages: ChatMessageBroadcaster tag
   let _expected_senders: USize val
+  var _chat_messages_and_tokens: persistent.Vec[(ChatMessage, Array[String] val)]
   let _tokens_by_sender: Map[String, FIFOBoundedSet[String]] ref
   let _token_counts: MultiSet[String]
   let _subscribers: SetIs[CountsSubscriber val] ref =
@@ -42,15 +57,29 @@ actor SendersByTokenCounter
     _chat_messages = chat_messages
     _rejected_messages = rejected_messages
     _expected_senders = expected_senders
+    _chat_messages_and_tokens = persistent.Vec[(ChatMessage, Array[String] val)]
     _tokens_by_sender = HashMap[String, FIFOBoundedSet[String], HashEq[String]](
       where prealloc = _expected_senders
     )
     _token_counts = MultiSet[String](where prealloc = _expected_senders)
 
+  fun box _current_counts(): Counts =>
+    let tokens_by_sender: Map[String, persistent.Vec[String]] trn =
+      HashMap[String, persistent.Vec[String], HashEq[String]]
+    for (sender, tokens) in _tokens_by_sender.pairs() do
+      tokens_by_sender(sender) = tokens.insertion_order
+    end
+
+    Counts(
+      _chat_messages_and_tokens,
+      consume tokens_by_sender,
+      _token_counts.values_by_count
+    )
+
   fun ref _notify_subscribers() =>
     if not _in_quiet_period then
       for subscriber in _subscribers.values() do
-        subscriber.counts_received(_token_counts.values_by_count)
+        subscriber.counts_received(_current_counts())
       end
       _in_quiet_period = true
       _dirty = false
@@ -77,17 +106,18 @@ actor SendersByTokenCounter
   be message_received(message: ChatMessage) =>
     let sender: (String | None) =
       if message.sender != "Me" then message.sender end
-    let extracted_tokens: Array[String] = _extract_tokens(message.text)
+    let extracted_tokens: Array[String] val = _extract_tokens(message.text)
 
     if extracted_tokens.size() > 0 then
       _env.out.print("Extracted token \"" + "\", \"".join(extracted_tokens.values()) + "\"")
-      extracted_tokens.reverse_in_place() // Prioritize earlier tokens
-      // TODO add to _chat_messages_and_tokens
+      let prioritized_tokens: Array[String] val =
+        recover extracted_tokens.reverse() end // Prioritize earlier tokens
+      _chat_messages_and_tokens.push((message, extracted_tokens))
       match sender
       | let sender': String =>
         let sender_tokens: FIFOBoundedSet[String] =
           _tokens_by_sender.get_or_else(sender', FIFOBoundedSet[String](_tokens_per_sender))
-        let effects: Array[Effect[String]] = sender_tokens.union(extracted_tokens.values())
+        let effects: Array[Effect[String]] = sender_tokens.union(prioritized_tokens.values())
         effects.reverse_in_place()
         for effect in effects.values() do
           match effect
@@ -118,7 +148,7 @@ actor SendersByTokenCounter
     _notify_subscribers()
 
   be subscribe(subscriber: CountsSubscriber val) =>
-    subscriber.counts_received(_token_counts.values_by_count)
+    subscriber.counts_received(_current_counts())
     if _subscribers.size() == 0 then
       _chat_messages.subscribe(_message_subscriber)
     end
