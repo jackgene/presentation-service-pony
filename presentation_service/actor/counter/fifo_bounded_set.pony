@@ -1,16 +1,15 @@
 use "collections"
 use persistent = "collections/persistent"
 
-// TODO make this properly generic
-type Effect[A: String val] is (Pushed[A] | PushedEvicting[A])
+type Effect[A: (Hashable val & Equatable[A])] is (Pushed[A] | PushedEvicting[A])
 
-class val Pushed[A: String val]
+class val Pushed[A: (Hashable val & Equatable[A])]
   let value: A
 
   new val create(value': A) =>
     value = value'
 
-class val PushedEvicting[A: String val]
+class val PushedEvicting[A: (Hashable val & Equatable[A])]
   let value: A
   let evicting: A
 
@@ -18,7 +17,7 @@ class val PushedEvicting[A: String val]
     value = value'
     evicting = evicting'
 
-class FIFOBoundedSet[A: String val]
+class FIFOBoundedSet[A: (Hashable val & Equatable[A])]
   let _max: USize
   let _uniques: Set[A]
   var insertion_order: persistent.Vec[A]
@@ -53,7 +52,7 @@ class FIFOBoundedSet[A: String val]
       else
         try
           let oldestValue: A = insertion_order(0)?
-          insertion_order = insertion_order.remove(0, 1)?
+          insertion_order = insertion_order.delete(0)?
           _uniques.unset(oldestValue)
 
           PushedEvicting[A](value, oldestValue)
