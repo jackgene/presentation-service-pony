@@ -48,7 +48,7 @@ actor ModeratedTextCollector
     _rejected_messages = rejected_messages
     _chat_text = Array[String](expected_messages)
 
-  fun box _current_messages(): ModeratedText =>
+  fun _current_messages(): ModeratedText =>
     let chat_text: Array[String] trn =
       Array[String](where len = _chat_text.size())
     for text in _chat_text.values() do

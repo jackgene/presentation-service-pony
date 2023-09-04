@@ -155,7 +155,7 @@ actor SendersByTokenCounter
       )
     _token_counts = MultiSet[String](where prealloc = _expected_senders)
 
-  fun box _current_counts(): Counts =>
+  fun _current_counts(): Counts =>
     let tokens_by_sender: Map[String, persistent.Vec[String]] trn =
       HashMap[String, persistent.Vec[String], HashEq[String]](
         where prealloc = _tokens_by_sender.size()
