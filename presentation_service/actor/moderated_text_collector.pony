@@ -30,7 +30,7 @@ actor ModeratedTextCollector
   let _name: String val
   let _chat_messages: ChatMessageBroadcaster tag
   let _rejected_messages: ChatMessageBroadcaster tag
-  let _chat_text_reversed: Array[String] ref
+  let _chat_text: Array[String] ref
   let _subscribers: SetIs[ModeratedTextSubscriber val] ref =
     HashSet[ModeratedTextSubscriber val, HashIs[ModeratedTextSubscriber val]]
   let _message_subscriber: ChatMessageSubscriber =
@@ -46,18 +46,19 @@ actor ModeratedTextCollector
     _name = name
     _chat_messages = chat_messages
     _rejected_messages = rejected_messages
-    _chat_text_reversed = Array[String](expected_messages)
+    _chat_text = Array[String](expected_messages)
 
-  fun _messages(): ModeratedText val =>
-    let len: USize = _chat_text_reversed.size()
-    let chat_text: Array[String] iso = recover Array[String](len) end
-    for text in _chat_text_reversed.reverse().values() do
+  fun box _current_messages(): ModeratedText =>
+    let chat_text: Array[String] trn =
+      Array[String](where len = _chat_text.size())
+    for text in _chat_text.values() do
       chat_text.push(text)
     end
+
     ModeratedText(consume chat_text)
 
   fun _notify_subscribers() =>
-    let msgs = _messages()
+    let msgs = _current_messages()
     for subscriber in _subscribers.values() do
       subscriber.moderated_text_received(msgs)
     end
@@ -65,17 +66,17 @@ actor ModeratedTextCollector
   be message_received(message: ChatMessage) =>
     match message.sender
     | "" =>
-      _chat_text_reversed.push(message.text)
+      _chat_text.push(message.text)
       _notify_subscribers()
     else
       _rejected_messages.new_message(message)
     end
 
   be reset() =>
-    _chat_text_reversed.clear()
+    _chat_text.clear()
 
   be subscribe(subscriber: ModeratedTextSubscriber val) =>
-    subscriber.moderated_text_received(_messages())
+    subscriber.moderated_text_received(_current_messages())
     if _subscribers.size() == 0 then
       _chat_messages.subscribe(_message_subscriber)
     end
