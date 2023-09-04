@@ -250,15 +250,15 @@ class BackendHandler is Handler
           let recipient_or_none: (String | None) =
             match route_parts.shift()?
             | "Everyone" => "Everyone"
-            | "Me" => "Me"
-            | "Me (Direct Message)" => "Me"
+            | "You" => "You"
+            | "You (Direct Message)" => "You"
             end
           match recipient_or_none
           | let recipient: String =>
             _chat_messages.new_message(
               ChatMessage(sender, recipient, text)
             )
-          | None if sender != "Me" =>
+          | None if sender != "You" =>
             return _bad_request_response("""malformed "route": """ + route)
           end
           _no_content_response
