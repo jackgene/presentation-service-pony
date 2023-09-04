@@ -12,133 +12,133 @@ primitive StaticContent
 
       function F2(fun)
       {
-        function wrapper(a) { return function(b) { return fun(a,b); }; }
-        wrapper.arity = 2;
-        wrapper.func = fun;
-        return wrapper;
+      function wrapper(a) { return function(b) { return fun(a,b); }; }
+      wrapper.arity = 2;
+      wrapper.func = fun;
+      return wrapper;
       }
 
       function F3(fun)
       {
-        function wrapper(a) {
+      function wrapper(a) {
           return function(b) { return function(c) { return fun(a, b, c); }; };
-        }
-        wrapper.arity = 3;
-        wrapper.func = fun;
-        return wrapper;
+      }
+      wrapper.arity = 3;
+      wrapper.func = fun;
+      return wrapper;
       }
 
       function F4(fun)
       {
-        function wrapper(a) { return function(b) { return function(c) {
+      function wrapper(a) { return function(b) { return function(c) {
           return function(d) { return fun(a, b, c, d); }; }; };
-        }
-        wrapper.arity = 4;
-        wrapper.func = fun;
-        return wrapper;
+      }
+      wrapper.arity = 4;
+      wrapper.func = fun;
+      return wrapper;
       }
 
       function F5(fun)
       {
-        function wrapper(a) { return function(b) { return function(c) {
+      function wrapper(a) { return function(b) { return function(c) {
           return function(d) { return function(e) { return fun(a, b, c, d, e); }; }; }; };
-        }
-        wrapper.arity = 5;
-        wrapper.func = fun;
-        return wrapper;
+      }
+      wrapper.arity = 5;
+      wrapper.func = fun;
+      return wrapper;
       }
 
       function F6(fun)
       {
-        function wrapper(a) { return function(b) { return function(c) {
+      function wrapper(a) { return function(b) { return function(c) {
           return function(d) { return function(e) { return function(f) {
           return fun(a, b, c, d, e, f); }; }; }; }; };
-        }
-        wrapper.arity = 6;
-        wrapper.func = fun;
-        return wrapper;
+      }
+      wrapper.arity = 6;
+      wrapper.func = fun;
+      return wrapper;
       }
 
       function F7(fun)
       {
-        function wrapper(a) { return function(b) { return function(c) {
+      function wrapper(a) { return function(b) { return function(c) {
           return function(d) { return function(e) { return function(f) {
           return function(g) { return fun(a, b, c, d, e, f, g); }; }; }; }; }; };
-        }
-        wrapper.arity = 7;
-        wrapper.func = fun;
-        return wrapper;
+      }
+      wrapper.arity = 7;
+      wrapper.func = fun;
+      return wrapper;
       }
 
       function F8(fun)
       {
-        function wrapper(a) { return function(b) { return function(c) {
+      function wrapper(a) { return function(b) { return function(c) {
           return function(d) { return function(e) { return function(f) {
           return function(g) { return function(h) {
           return fun(a, b, c, d, e, f, g, h); }; }; }; }; }; }; };
-        }
-        wrapper.arity = 8;
-        wrapper.func = fun;
-        return wrapper;
+      }
+      wrapper.arity = 8;
+      wrapper.func = fun;
+      return wrapper;
       }
 
       function F9(fun)
       {
-        function wrapper(a) { return function(b) { return function(c) {
+      function wrapper(a) { return function(b) { return function(c) {
           return function(d) { return function(e) { return function(f) {
           return function(g) { return function(h) { return function(i) {
           return fun(a, b, c, d, e, f, g, h, i); }; }; }; }; }; }; }; };
-        }
-        wrapper.arity = 9;
-        wrapper.func = fun;
-        return wrapper;
+      }
+      wrapper.arity = 9;
+      wrapper.func = fun;
+      return wrapper;
       }
 
       function A2(fun, a, b)
       {
-        return fun.arity === 2
+      return fun.arity === 2
           ? fun.func(a, b)
           : fun(a)(b);
       }
       function A3(fun, a, b, c)
       {
-        return fun.arity === 3
+      return fun.arity === 3
           ? fun.func(a, b, c)
           : fun(a)(b)(c);
       }
       function A4(fun, a, b, c, d)
       {
-        return fun.arity === 4
+      return fun.arity === 4
           ? fun.func(a, b, c, d)
           : fun(a)(b)(c)(d);
       }
       function A5(fun, a, b, c, d, e)
       {
-        return fun.arity === 5
+      return fun.arity === 5
           ? fun.func(a, b, c, d, e)
           : fun(a)(b)(c)(d)(e);
       }
       function A6(fun, a, b, c, d, e, f)
       {
-        return fun.arity === 6
+      return fun.arity === 6
           ? fun.func(a, b, c, d, e, f)
           : fun(a)(b)(c)(d)(e)(f);
       }
       function A7(fun, a, b, c, d, e, f, g)
       {
-        return fun.arity === 7
+      return fun.arity === 7
           ? fun.func(a, b, c, d, e, f, g)
           : fun(a)(b)(c)(d)(e)(f)(g);
       }
       function A8(fun, a, b, c, d, e, f, g, h)
       {
-        return fun.arity === 8
+      return fun.arity === 8
           ? fun.func(a, b, c, d, e, f, g, h)
           : fun(a)(b)(c)(d)(e)(f)(g)(h);
       }
       function A9(fun, a, b, c, d, e, f, g, h, i)
       {
-        return fun.arity === 9
+      return fun.arity === 9
           ? fun.func(a, b, c, d, e, f, g, h, i)
           : fun(a)(b)(c)(d)(e)(f)(g)(h)(i);
       }
@@ -769,11 +769,11 @@ primitive StaticContent
       function addSlashes(str, isChar)
       {
           var s = str.replace(/\\/g, '\\\\')
-                    .replace(/\n/g, '\\n')
-                    .replace(/\t/g, '\\t')
-                    .replace(/\r/g, '\\r')
-                    .replace(/\v/g, '\\v')
-                    .replace(/\0/g, '\\0');
+                  .replace(/\n/g, '\\n')
+                  .replace(/\t/g, '\\t')
+                  .replace(/\r/g, '\\r')
+                  .replace(/\v/g, '\\v')
+                  .replace(/\0/g, '\\0');
           if (isChar)
           {
               return s.replace(/\'/g, '\\\'');
@@ -1144,9 +1144,9 @@ primitive StaticContent
       {
           var arr = [];
           while (   ws.ctor !== '[]'
-                && xs.ctor !== '[]'
-                && ys.ctor !== '[]'
-                && zs.ctor !== '[]')
+              && xs.ctor !== '[]'
+              && ys.ctor !== '[]'
+              && zs.ctor !== '[]')
           {
               arr.push(A4(f, ws._0, xs._0, ys._0, zs._0));
               ws = ws._1;
@@ -1161,10 +1161,10 @@ primitive StaticContent
       {
           var arr = [];
           while (   vs.ctor !== '[]'
-                && ws.ctor !== '[]'
-                && xs.ctor !== '[]'
-                && ys.ctor !== '[]'
-                && zs.ctor !== '[]')
+              && ws.ctor !== '[]'
+              && xs.ctor !== '[]'
+              && ys.ctor !== '[]'
+              && zs.ctor !== '[]')
           {
               arr.push(A5(f, vs._0, ws._0, xs._0, ys._0, zs._0));
               vs = vs._1;
@@ -4722,7 +4722,7 @@ primitive StaticContent
               var table = new Array((to - from) % (M + 1));
               for (var i = 0; i < table.length; i++)
               {
-                table[i] = f(from + i);
+              table[i] = f(from + i);
               }
               return {
                   ctor: '_Array',
@@ -4881,7 +4881,7 @@ primitive StaticContent
               }
               else
               {
-                return null;
+              return null;
               }
           }
 
@@ -15553,6 +15553,7 @@ primitive StaticContent
               }
           }
       };
+      var _jackgene$live_deck$Moderator$moderatorName = '';
       var _jackgene$live_deck$Moderator$ChatMessage = F3(
           function (a, b, c) {
               return {sender: a, recipient: b, text: c};
@@ -15659,7 +15660,7 @@ primitive StaticContent
                           ctor: '_Tuple2',
                           _0: model,
                           _1: _jackgene$live_deck$Moderator$postChat(
-                              A3(_jackgene$live_deck$Moderator$ChatMessage, 'Me', 'Everyone', model.messageText))
+                              A3(_jackgene$live_deck$Moderator$ChatMessage, _jackgene$live_deck$Moderator$moderatorName, 'Everyone', model.messageText))
                       };
                   case 'RemoveMessage':
                       var _p2 = _p0._0;
@@ -16082,12 +16083,12 @@ primitive StaticContent
                                                                                                   _elm_lang$core$Maybe$Just(
                                                                                                       _elm_lang$core$Native_Utils.update(
                                                                                                           chatMsg,
-                                                                                                          {sender: 'Me'})))),
+                                                                                                          {sender: _jackgene$live_deck$Moderator$moderatorName})))),
                                                                                           _1: {ctor: '[]'}
                                                                                       },
                                                                                       {
                                                                                           ctor: '::',
-                                                                                          _0: _rtfeldman$elm_css$Html_Styled$text('Accept (as Me)'),
+                                                                                          _0: _rtfeldman$elm_css$Html_Styled$text('Accept (as Moderator)'),
                                                                                           _1: {ctor: '[]'}
                                                                                       }),
                                                                                   _1: {
@@ -16142,30 +16143,30 @@ primitive StaticContent
 
       if (typeof define === "function" && define['amd'])
       {
-        define([], function() { return Elm; });
-        return;
+      define([], function() { return Elm; });
+      return;
       }
 
       if (typeof module === "object")
       {
-        module['exports'] = Elm;
-        return;
+      module['exports'] = Elm;
+      return;
       }
 
       var globalElm = this['Elm'];
       if (typeof globalElm === "undefined")
       {
-        this['Elm'] = Elm;
-        return;
+      this['Elm'] = Elm;
+      return;
       }
 
       for (var publicModule in Elm)
       {
-        if (publicModule in globalElm)
-        {
+      if (publicModule in globalElm)
+      {
           throw new Error('There are two Elm modules called `' + publicModule + '` on this page! Rename one of them.');
-        }
-        globalElm[publicModule] = Elm[publicModule];
+      }
+      globalElm[publicModule] = Elm[publicModule];
       }
 
       }).call(this);
