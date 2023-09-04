@@ -64,15 +64,19 @@ primitive MappedKeywordsTokenizing
 
 class MappedKeywordsTokenizer
   let _env: Env val
-  let _word_separator_pattern: (Regex val | None) =
-    try 
-      recover Regex("""[\s!"&,./?|]""")? end
-    else None end
   let _token_by_word: Map[String, String] val
+  let _word_separator_pattern: (Regex val | None) =
+      try 
+        recover Regex("""[\s!"&,./?|]""")? end
+      else None end
 
   new val create(env: Env, token_by_word: Map[String, String] val) =>
     _env = env
     _token_by_word = token_by_word
+    match _word_separator_pattern
+    | None =>
+      _env.err.print("[PROGRAMMING ERROR] _word_separator_pattern regex")
+    end
 
   fun val apply(text: String val): Array[String val] iso^ =>
     recover
