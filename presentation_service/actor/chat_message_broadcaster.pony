@@ -11,10 +11,10 @@ class val ChatMessage
     recipient = recipient'
     text = text'
 
-  fun box string(): String iso^ =>
+  fun string(): String iso^ =>
     sender + " to " + recipient + ": " + text
 
-  fun box json(): JsonObject iso^ =>
+  fun json(): JsonObject iso^ =>
     recover
       let this_json: Map[String, JsonType] =
         HashMap[String, JsonType, HashEq[String]](where prealloc = 3)

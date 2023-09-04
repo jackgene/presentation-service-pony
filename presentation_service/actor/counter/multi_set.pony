@@ -7,7 +7,7 @@ class MultiSet[A: (Hashable val & Equatable[A])]
   let _counts_by_value: Map[A, U64]
   var values_by_count: persistent.Map[U64, persistent.Vec[A]]
 
-  new ref create(prealloc: USize val = 6) =>
+  new create(prealloc: USize val = 6) =>
     _counts_by_value = HashMap[A, U64, HashEq[A]](where prealloc = prealloc)
     values_by_count = persistent.HashMap[U64, persistent.Vec[A], HashEq[U64]]
 

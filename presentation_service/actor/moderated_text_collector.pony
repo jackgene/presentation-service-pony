@@ -7,7 +7,7 @@ class val ModeratedText
   new val create(chat_text': Array[String] val) =>
     chat_text = chat_text'
 
-  fun box json(): JsonObject iso^ =>
+  fun json(): JsonObject iso^ =>
     recover
       let this_json: Map[String, JsonType] =
         HashMap[String, JsonType, HashEq[String]](where prealloc = 1)

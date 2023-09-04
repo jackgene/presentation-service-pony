@@ -22,7 +22,7 @@ class FIFOBoundedSet[A: (Hashable val & Equatable[A])]
   let _uniques: Set[A]
   var insertion_order: persistent.Vec[A]
 
-  new ref create(max: USize val = 3) =>
+  new create(max: USize val = 3) =>
     _max = max
     _uniques = HashSet[A, HashEq[A]](where prealloc = max)
     insertion_order = persistent.Vec[A]

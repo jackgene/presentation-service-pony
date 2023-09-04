@@ -15,7 +15,7 @@ class val ChatMessageAndTokens
     chat_message = chat_message'
     tokens = tokens'
 
-  fun box json(): JsonObject iso^ =>
+  fun json(): JsonObject iso^ =>
     recover
       let this_json: Map[String, JsonType] =
         HashMap[String, JsonType, HashEq[String]](2)
@@ -48,7 +48,7 @@ class val Counts
     tokens_by_sender = tokens_by_sender'
     tokens_by_count = tokens_by_count'
 
-  fun box json(): JsonObject iso^ =>
+  fun json(): JsonObject iso^ =>
     recover
       let this_json: Map[String, JsonType] =
         HashMap[String, JsonType, HashEq[String]](3)

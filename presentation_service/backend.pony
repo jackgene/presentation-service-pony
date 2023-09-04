@@ -74,7 +74,7 @@ class BackendHandler is Handler
   let _questions: ModeratedTextCollector
   let _transcriptions: TranscriptionBroadcaster
 
-  new ref create(
+  new create(
     session: Session,
     deck_html: String,
     chat_messages: ChatMessageBroadcaster,
@@ -99,7 +99,7 @@ class BackendHandler is Handler
     _questions = questions
     _transcriptions = transcriptions
 
-  fun box _bad_request_response(
+  fun _bad_request_response(
     body: String = StatusBadRequest.string()
   ): ByteSeqIter =>
     Responses.builder()
@@ -109,7 +109,7 @@ class BackendHandler is Handler
       .add_chunk(body.array())
       .build()
 
-  fun box _route(
+  fun _route(
     request: Request val, request_id: RequestID
   ): (ByteSeqIter val | None) =>
     match (request.method(), request.uri().path)
@@ -129,7 +129,7 @@ class BackendHandler is Handler
           _language_poll.subscribe(count_subscriber)
 
           object ref is WebSocketHandler
-            fun box current_session(): WebSocketSession => session
+            fun current_session(): WebSocketSession => session
 
             fun ref closed() =>
               _language_poll.unsubscribe(count_subscriber)
@@ -150,7 +150,7 @@ class BackendHandler is Handler
           _word_cloud.subscribe(count_subscriber)
 
           object ref is WebSocketHandler
-            fun box current_session(): WebSocketSession => session
+            fun current_session(): WebSocketSession => session
 
             fun ref closed() =>
               _word_cloud.unsubscribe(count_subscriber)
@@ -171,7 +171,7 @@ class BackendHandler is Handler
           _questions.subscribe(question_subscriber)
 
           object ref is WebSocketHandler
-            fun box current_session(): WebSocketSession =>
+            fun current_session(): WebSocketSession =>
               session
 
             fun ref closed() =>
@@ -193,7 +193,7 @@ class BackendHandler is Handler
           _transcriptions.subscribe(transcription_subscriber)
 
           object ref is WebSocketHandler
-            fun box current_session(): WebSocketSession => session
+            fun current_session(): WebSocketSession => session
 
             fun ref closed() =>
               _transcriptions.unsubscribe(transcription_subscriber)
@@ -218,7 +218,7 @@ class BackendHandler is Handler
           _rejected_messages.subscribe(message_subscriber)
 
           object ref is WebSocketHandler
-            fun box current_session(): WebSocketSession => session
+            fun current_session(): WebSocketSession => session
 
             fun ref closed() =>
               _rejected_messages.unsubscribe(message_subscriber)
