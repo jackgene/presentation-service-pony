@@ -157,7 +157,9 @@ actor SendersByTokenCounter
 
   fun box _current_counts(): Counts =>
     let tokens_by_sender: Map[String, persistent.Vec[String]] trn =
-      HashMap[String, persistent.Vec[String], HashEq[String]]
+      HashMap[String, persistent.Vec[String], HashEq[String]](
+        where prealloc = _tokens_by_sender.size()
+      )
     for (sender, tokens) in _tokens_by_sender.pairs() do
       tokens_by_sender(sender) = tokens.insertion_order
     end
@@ -197,7 +199,7 @@ actor SendersByTokenCounter
 
   be message_received(message: ChatMessage) =>
     let sender: (String | None) =
-      if message.sender != "Me" then message.sender end
+      if message.sender != "" then message.sender end
     let extracted_tokens: Array[String] val = _extract_tokens(message.text)
 
     if extracted_tokens.size() > 0 then
