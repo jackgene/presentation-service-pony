@@ -29,6 +29,5 @@ jobs:
 
     - name: Build
       run: |
-        export PATH=$PATH:~/.local/share/ponyup/bin
         corral fetch
         corral run -- ponyc -Dopenssl_1.1.x -o build/release presentation_service
