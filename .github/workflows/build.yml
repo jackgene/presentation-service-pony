@@ -16,8 +16,10 @@ jobs:
       run: |
         sudo apt-get install -y libssl-dev
         bash -c "$(curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/ponylang/ponyup/latest-release/ponyup-init.sh)"
+        export PATH=$PATH:/home/runner/.local/share/ponyup/bin
+        ponyup update ponyc release
+        ponyup update corral release
         echo "/home/runner/.local/share/ponyup/bin" >> $GITHUB_PATH
-        /home/runner/.local/share/ponyup/bin/ponyup update corral release
     - name: Build
       run: |
         corral fetch
