@@ -112,6 +112,7 @@ class FIFOBoundedSet[A: (Hashable val & Equatable[A])]
     let effective_pushes_values: Iterator[A] = effective_pushes.values()
     for 
       (value, evicting) in Iter[A](effective_pushes_values)
+        .unique()
         .zip[A](effective_evicts.values())
     do
       effects.push(PushedEvicting[A](value, evicting))
