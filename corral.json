@@ -17,7 +17,7 @@
     },
     {
       "locator": "github.com/jackgene/http_websocket_server.git",
-      "version": "feature/websocket-support"
+      "version": "0.0.1"
     }
   ],
   "info": {
