@@ -8,11 +8,11 @@ on:
       - main
 jobs:
   Test:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v1
     - name: Setup Pony & 3rd Party Dependencies
-      run: brew install corral libressl
+      run: apt-get install -y libssl-dev corral
     - name: Build
       run: corral fetch & make
