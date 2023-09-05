@@ -22,4 +22,4 @@ jobs:
     - name: Build
       run: |
         corral fetch
-        corral run -- ponyc -Dopenssl_3.0.x -o build/release presentation_service
+        corral run -- ponyc -Dopenssl_1.1.x -o build/release presentation_service
