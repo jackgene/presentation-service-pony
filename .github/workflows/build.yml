@@ -12,9 +12,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v1
-    - name: Setup Pony & 3rd Party Dependencies
+    - name: Setup Pony SDK
       run: |
-        sudo apt-get install -y libssl-dev
         bash -c "$(curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/ponylang/ponyup/latest-release/ponyup-init.sh)"
         export PATH=$PATH:/home/runner/.local/share/ponyup/bin
         ponyup update ponyc release
@@ -23,4 +22,4 @@ jobs:
     - name: Build
       run: |
         corral fetch
-        make
+        corral run -- ponyc -Dopenssl_3.0.x -o build/release presentation_service
