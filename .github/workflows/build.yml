@@ -12,6 +12,13 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v1
+
+    - name: Cache Corral Downloaded Depenencies
+      uses: actions/cache@v3
+      with:
+        path: ~/work/presentation-service-pony/presentation-service-pony/_repos
+        key: corral-${{ hashFiles('~/work/presentation-service-pony/lock.json') }}
+
     - name: Setup Pony SDK
       run: |
         bash -c "$(curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/ponylang/ponyup/latest-release/ponyup-init.sh)"
@@ -19,7 +26,9 @@ jobs:
         ponyup update ponyc release
         ponyup update corral release
         echo "/home/runner/.local/share/ponyup/bin" >> $GITHUB_PATH
+
     - name: Build
       run: |
+        export PATH=$PATH:~/.local/share/ponyup/bin
         corral fetch
         corral run -- ponyc -Dopenssl_1.1.x -o build/release presentation_service
