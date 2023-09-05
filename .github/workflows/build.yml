@@ -13,6 +13,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v1
     - name: Setup Pony & 3rd Party Dependencies
-      run: apt-get install -y libssl-dev corral
+      run: sudo apt-get install -y libssl-dev corral
     - name: Build
       run: corral fetch & make
