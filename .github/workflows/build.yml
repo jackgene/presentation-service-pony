@@ -13,6 +13,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v1
     - name: Setup Pony & 3rd Party Dependencies
-      run: brew install corral libressl pcre2
+      run: brew install corral libressl
     - name: Build
       run: corral fetch & make
