@@ -13,6 +13,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v1
     - name: Setup Pony & 3rd Party Dependencies
-      run: sudo apt-get install -y libssl-dev corral
+      run: sudo apt-get install -y libssl-dev && sh -c "$(curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/ponylang/ponyup/latest-release/ponyup-init.sh)" && ponyup update corral release
     - name: Build
-      run: corral fetch & make
+      run: corral fetch && make
