@@ -15,4 +15,4 @@ jobs:
     - name: Setup Pony
       run: brew install corral
     - name: Build
-      run: make
+      run: corral fetch & make
