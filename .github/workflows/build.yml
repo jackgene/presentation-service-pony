@@ -17,7 +17,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: /home/runner/.local/share/ponyup
-        key: ${{ runner.os }}-ponyup-${{ hashFiles('**/lock.json') }}
+        key: ${{ runner.os }}-ponyup-${{ hashFiles('Makefile') }}
         restore-keys: |
           ${{ runner.os }}-ponyup-
 
