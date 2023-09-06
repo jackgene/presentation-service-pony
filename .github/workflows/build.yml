@@ -13,6 +13,14 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
+    - name: Cache ponyup Downloads
+      uses: actions/cache@v3
+      with:
+        path: /home/runner/.local/share/ponyup
+        key: ${{ runner.os }}-ponyup-${{ hashFiles('**/lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-ponyup-
+
     - name: Cache Corral Depenencies
       uses: actions/cache@v3
       with:
@@ -23,9 +31,10 @@ jobs:
 
     - name: Setup Pony SDK
       run: |
-        bash -c "$(curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/ponylang/ponyup/latest-release/ponyup-init.sh)"
+        if [ ! -d "/home/runner/.local/share/ponyup" ]; then
+          bash -c "$(curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/ponylang/ponyup/latest-release/ponyup-init.sh)"
+        fi
         export PATH=$PATH:/home/runner/.local/share/ponyup/bin
-        du -sh /home/runner/.local/share/ponyup
         ponyup update ponyc release
         ponyup update corral release
         echo "/home/runner/.local/share/ponyup/bin" >> $GITHUB_PATH
