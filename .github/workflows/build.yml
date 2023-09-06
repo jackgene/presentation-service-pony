@@ -27,11 +27,10 @@ jobs:
         export PATH=$PATH:/home/runner/.local/share/ponyup/bin
         ponyup update ponyc release
         ponyup update corral release
+        du -sh /home/runner/.local/share/ponyup
         echo "/home/runner/.local/share/ponyup/bin" >> $GITHUB_PATH
 
     - name: Build
       run: |
-        ls _repos
-        du -sh _repos
         corral fetch
         corral run -- ponyc -Dopenssl_1.1.x -o build/release presentation_service
