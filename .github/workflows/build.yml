@@ -11,13 +11,15 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v1
+      uses: actions/checkout@v3
 
     - name: Cache Corral Downloaded Depenencies
       uses: actions/cache@v3
       with:
-        path: ~/work/presentation-service-pony/presentation-service-pony/_repos
-        key: corral-${{ hashFiles('~/work/presentation-service-pony/lock.json') }}
+        path: _repos
+        key: ${{ runner.os }}-corral-${{ hashFiles('**/lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-corral-
 
     - name: Setup Pony SDK
       run: |
