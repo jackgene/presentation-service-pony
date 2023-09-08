@@ -23,7 +23,7 @@ class val BackendHandlerFactory
       env, "language-poll"
       where
       extract_tokens = MappedKeywordsTokenizer(
-        env, MappedKeywordsTokenizing.languages_by_name()
+        env where token_by_word = MappedKeywordsTokenizing.languages_by_name()
       ),
       tokens_per_sender = 3,
       chat_messages = _chat_messages,
@@ -34,7 +34,10 @@ class val BackendHandlerFactory
       env, "word-cloud"
       where
       extract_tokens = NormalizedWordsTokenizer(
-        env, NormalizedWordsTokenizing.stop_words()
+        env
+        where
+        min_word_length = 3, max_word_length = 24,
+        stop_words = NormalizedWordsTokenizing.stop_words()
       ),
       tokens_per_sender = 7,
       chat_messages = _chat_messages,
