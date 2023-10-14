@@ -4,79 +4,18 @@ use persistent = "collections/persistent"
 use "json"
 use "time"
 
-class val ChatMessageAndTokens
-  let chat_message: ChatMessage
-  let tokens: Array[String] val
-
-  new val create(
-    chat_message': ChatMessage,
-    tokens': Array[String] val
-  ) =>
-    chat_message = chat_message'
-    tokens = tokens'
-
-  fun json(): JsonObject iso^ =>
-    recover
-      let this_json: Map[String, JsonType] =
-        HashMap[String, JsonType, HashEq[String]](2)
-
-      // Property: chatMessage
-      this_json("chatMessage") = chat_message.json()
-
-      // Property: tokens
-      let tokens_json: Array[JsonType] =
-        Array[JsonType](where len = tokens.size())
-      for token in tokens.values() do
-        tokens_json.push(token)
-      end
-      this_json("tokens") = JsonArray.from_array(tokens_json)
-
-      JsonObject.from_map(this_json)
-    end
-
 class val Counts
-  let chat_messages_and_tokens: persistent.Vec[ChatMessageAndTokens]
-  let tokens_by_sender: Map[String, persistent.Vec[String]] val
   let tokens_by_count: persistent.Map[U64, persistent.Vec[String]]
 
   new val create(
-    chat_messages_and_tokens': persistent.Vec[ChatMessageAndTokens],
-    tokens_by_sender': Map[String, persistent.Vec[String]] val,
     tokens_by_count': persistent.Map[U64, persistent.Vec[String]]
   ) =>
-    chat_messages_and_tokens = chat_messages_and_tokens'
-    tokens_by_sender = tokens_by_sender'
     tokens_by_count = tokens_by_count'
 
   fun json(): JsonObject iso^ =>
     recover
       let this_json: Map[String, JsonType] =
         HashMap[String, JsonType, HashEq[String]](3)
-
-      // Property: chatMessagesAndTokens
-      let chat_messages_and_tokens_json: Array[JsonType] =
-        Array[JsonType](where len = chat_messages_and_tokens.size())
-      for chat_message_and_tokens in chat_messages_and_tokens.values() do
-        chat_messages_and_tokens_json.push(chat_message_and_tokens.json())
-      end
-      this_json("chatMessagesAndTokens") =
-        JsonArray.from_array(chat_messages_and_tokens_json)
-
-      // Property: tokensBySender
-      let tokens_by_sender_json: Map[String, JsonType] =
-        HashMap[String, JsonType, HashEq[String]](
-          where prealloc = tokens_by_sender.size()
-        )
-      for (sender', tokens') in tokens_by_sender.pairs() do
-        let tokens_json: Array[JsonType] =
-          Array[JsonType](where len = tokens'.size())
-        for token' in tokens'.values() do
-          tokens_json.push(token')
-        end
-        tokens_by_sender_json(sender') = JsonArray.from_array(tokens_json)
-      end
-      this_json("tokensBySender") =
-        JsonObject.from_map(tokens_by_sender_json)
 
       // Property: tokensAndCounts
       let count_and_tokens_pairs_json: Array[JsonType] =
@@ -122,7 +61,6 @@ actor SendersByTokenCounter
   let _chat_messages: ChatMessageBroadcaster tag
   let _rejected_messages: ChatMessageBroadcaster tag
   let _expected_senders: USize val
-  var _chat_messages_and_tokens: persistent.Vec[ChatMessageAndTokens]
   let _tokens_by_sender: Map[String, FIFOBoundedSet[String]] ref
   let _token_counts: MultiSet[String]
   let _subscribers: SetIs[CountsSubscriber val] ref =
@@ -148,7 +86,6 @@ actor SendersByTokenCounter
     _chat_messages = chat_messages
     _rejected_messages = rejected_messages
     _expected_senders = expected_senders
-    _chat_messages_and_tokens = persistent.Vec[ChatMessageAndTokens]
     _tokens_by_sender =
       HashMap[String, FIFOBoundedSet[String], HashEq[String]](
         where prealloc = _expected_senders
@@ -156,19 +93,7 @@ actor SendersByTokenCounter
     _token_counts = MultiSet[String](where prealloc = _expected_senders)
 
   fun _current_counts(): Counts =>
-    let tokens_by_sender: Map[String, persistent.Vec[String]] trn =
-      HashMap[String, persistent.Vec[String], HashEq[String]](
-        where prealloc = _tokens_by_sender.size()
-      )
-    for (sender, tokens) in _tokens_by_sender.pairs() do
-      tokens_by_sender(sender) = tokens.insertion_order
-    end
-
-    Counts(
-      _chat_messages_and_tokens,
-      consume tokens_by_sender,
-      _token_counts.values_by_count
-    )
+    Counts(_token_counts.values_by_count)
 
   fun ref _notify_subscribers() =>
     if not _in_quiet_period then
@@ -208,9 +133,6 @@ actor SendersByTokenCounter
       )
       let prioritized_tokens: Array[String] val =
         recover extracted_tokens.reverse() end // Prioritize earlier tokens
-      _chat_messages_and_tokens = _chat_messages_and_tokens.push(
-        ChatMessageAndTokens(message, extracted_tokens)
-      )
       match sender
       | let sender': String =>
         let sender_tokens: FIFOBoundedSet[String] =
