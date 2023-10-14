@@ -65,18 +65,25 @@ primitive MappedKeywordsTokenizing
 class MappedKeywordsTokenizer
   let _env: Env val
   let _token_by_word: Map[String, String] val
-  let _word_separator_pattern: (Regex val | None) =
-      try 
-        recover Regex("""[\s!"&,./?|]""")? end
-      else None end
+  let _word_separator_pattern: _StringSplitter val
 
   new val create(env: Env, token_by_word: Map[String, String] val) =>
     _env = env
     _token_by_word = token_by_word
-    match _word_separator_pattern
-    | None =>
-      _env.err.print("[PROGRAMMING ERROR] _word_separator_pattern regex")
-    end
+    _word_separator_pattern =
+      try 
+        recover Regex("""[\s!"&,./?|]""")? end
+      else
+        _env.err.print("[PROGRAMMING ERROR] _word_separator_pattern regex")
+        // Fake spliter that always fails
+        object val is _StringSplitter
+          fun box split(
+            subject: String val, offset: USize val = 0
+          ): Array[String val] iso^ ? =>
+            _env.err.print("[PROGRAMMING ERROR] _word_separator_pattern regex")
+            error
+        end
+      end
 
   fun val apply(text: String val): Array[String val] iso^ =>
     recover
@@ -84,17 +91,8 @@ class MappedKeywordsTokenizer
       text'.strip()
       let words: Array[String] =
         try
-          match _word_separator_pattern
-          | let word_separator_pattern: Regex val =>
-            word_separator_pattern.split(text'.clone())?
-          else error end
-        else
-          _env.err.print(
-            "[PROGRAMMING ERROR] error spliting words with regex, " +
-            "falling back to simple split"
-          )
-          text'.split()
-        end
+          _word_separator_pattern.split(text'.clone())?
+        else [] end
 
       let tokens: Array[String] = Array[String](where len = words.size())
       for word in words.values() do
