@@ -1,3 +1,4 @@
+use "../.."
 use "collections"
 use "regex"
 
@@ -65,7 +66,7 @@ primitive MappedKeywordsTokenizing
 class MappedKeywordsTokenizer
   let _env: Env val
   let _token_by_word: Map[String, String] val
-  let _word_separator_pattern: _StringSplitter val
+  let _word_separator_pattern: Regex val
 
   new val create(env: Env, token_by_word: Map[String, String] val) =>
     _env = env
@@ -74,15 +75,8 @@ class MappedKeywordsTokenizer
       try 
         recover Regex("""[\s!"&,./?|]""")? end
       else
-        _env.err.print("[PROGRAMMING ERROR] _word_separator_pattern regex")
-        // Fake spliter that always fails
-        object val is _StringSplitter
-          fun box split(
-            subject: String val, offset: USize val = 0
-          ): Array[String val] iso^ ? =>
-            _env.err.print("[PROGRAMMING ERROR] _word_separator_pattern regex")
-            error
-        end
+        _env.err.print("FATAL: bad _word_separator_pattern regex")
+        FatalError[Regex val]()
       end
 
   fun val apply(text: String val): Array[String val] iso^ =>

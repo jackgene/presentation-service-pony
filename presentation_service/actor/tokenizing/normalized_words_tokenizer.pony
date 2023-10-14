@@ -1,3 +1,4 @@
+use "../.."
 use "collections"
 use "regex"
 
@@ -121,8 +122,8 @@ class NormalizedWordsTokenizer
   let _stop_words: Set[String] val
   let _min_word_length: USize
   let _max_word_length: USize
-  let _valid_word_pattern: _StringMatcher val
-  let _word_separator_pattern: _StringSplitter val
+  let _valid_word_pattern: Regex val
+  let _word_separator_pattern: Regex val
 
   new val create(
     env: Env,
@@ -148,27 +149,16 @@ class NormalizedWordsTokenizer
       try
         recover Regex("""(\p{L}+(?:-\p{L}+)*)""")? end
       else
-        _env.err.print("[PROGRAMMING ERROR] bad _valid_word_pattern regex")
-        // Fake matcher that never matches
-        object val is _StringMatcher
-          fun box eq(subject: (String box | Array[U8 val] box)): Bool val =>
-            _env.err.print("[PROGRAMMING ERROR] bad _valid_word_pattern regex")
-            false
-        end
+        _env.err.print("FATAL: bad _valid_word_pattern regex")
+        FatalError[Regex val]()
       end
     _word_separator_pattern =
       try
         recover Regex("""[^\p{L}\-]+""")? end
       else
-        _env.err.print("[PROGRAMMING ERROR] _word_separator_pattern regex")
+        _env.err.print("FATAL: bad _word_separator_pattern regex")
         // Fake spliter that always fails
-        object val is _StringSplitter
-          fun box split(
-            subject: String val, offset: USize val = 0
-          ): Array[String val] iso^ ? =>
-            _env.err.print("[PROGRAMMING ERROR] _word_separator_pattern regex")
-            error
-        end
+        FatalError[Regex val]()
       end
 
   fun val apply(text: String val): Array[String val] iso^ =>
